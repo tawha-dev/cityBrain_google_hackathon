@@ -1,0 +1,16 @@
+{
+  "name": "@citybrain/database",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "migrate": "node ../../services/api/dist/db/migrate.js",
+    "prisma:generate": "prisma generate",
+    "prisma:pull": "prisma db pull"
+  },
+  "devDependencies": {
+    "prisma": "^6.5.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0"
+  }
+}

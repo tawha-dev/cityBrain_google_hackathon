@@ -1,0 +1,445 @@
+// CityBrain AI — Prisma schema (v2)
+// Datasource: PostgreSQL 16 + pgvector
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector"), uuidOssp(map: "uuid-ossp")]
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum CrisisType {
+  flood
+  heatwave
+  accident
+  infrastructure_failure
+  road_blockage
+}
+
+enum CrisisStatus {
+  detecting
+  analyzing
+  planning
+  executing
+  reflecting
+  monitoring
+  resolved
+  failed
+  archived
+}
+
+enum SeverityLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum EscalationLevel {
+  watch
+  advisory
+  operational
+  critical
+}
+
+enum ActionStatus {
+  draft
+  approved
+  executing
+  completed
+  failed
+  cancelled
+}
+
+enum ReportSource {
+  social
+  weather
+  traffic
+  field_report
+  sensor
+  citizen_app
+  operator
+}
+
+enum ReportLanguage {
+  en
+  ur
+  roman_ur
+  mixed
+}
+
+enum TeamStatus {
+  available
+  dispatched
+  on_scene
+  returning
+  offline
+}
+
+enum AlertDeliveryStatus {
+  draft
+  queued
+  simulated
+  delivered
+  failed
+}
+
+// ---------------------------------------------------------------------------
+// Event sourcing
+// ---------------------------------------------------------------------------
+
+model DomainEvent {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  aggregateType  String   @default("crisis") @map("aggregate_type") @db.VarChar(64)
+  aggregateId    String   @map("aggregate_id") @db.Uuid
+  eventType      String   @map("event_type") @db.VarChar(128)
+  eventVersion   Int      @map("event_version")
+  payload        Json
+  metadata       Json     @default("{}")
+  correlationId  String?  @map("correlation_id") @db.Uuid
+  causationId    String?  @map("causation_id") @db.Uuid
+  actor          String   @default("system") @db.VarChar(64)
+  occurredAt     DateTime @default(now()) @map("occurred_at") @db.Timestamptz
+
+  escalationRows EscalationHistory[]
+  reasoningLogs  ReasoningLog[]
+
+  @@unique([aggregateType, aggregateId, eventVersion], map: "uq_domain_events_version")
+  @@index([aggregateType, aggregateId, eventVersion(sort: Desc)], map: "idx_domain_events_aggregate")
+  @@index([occurredAt(sort: Desc)], map: "idx_domain_events_occurred")
+  @@map("domain_events")
+}
+
+// ---------------------------------------------------------------------------
+// Crisis aggregate
+// ---------------------------------------------------------------------------
+
+model CrisisEvent {
+  id               String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  aggregateVersion Int              @default(0) @map("aggregate_version")
+  scenarioKey      String?          @map("scenario_key") @db.VarChar(64)
+  crisisType       CrisisType       @map("crisis_type")
+  status           CrisisStatus     @default(detecting)
+  title            String           @db.VarChar(256)
+  areaLabel        String?          @map("area_label") @db.VarChar(128)
+  summary          String?
+  severity         SeverityLevel?
+  escalation       EscalationLevel  @default(watch)
+  confidence       Float?
+  centroidLat      Float?           @map("centroid_lat")
+  centroidLng      Float?           @map("centroid_lng")
+  affectedRadiusM  Int              @default(500) @map("affected_radius_m")
+  bboxJson         Json?            @map("bbox_json")
+  openedAt         DateTime         @default(now()) @map("opened_at") @db.Timestamptz
+  closedAt         DateTime?        @map("closed_at") @db.Timestamptz
+  validFrom        DateTime         @default(now()) @map("valid_from") @db.Timestamptz
+  validTo          DateTime?        @map("valid_to") @db.Timestamptz
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  dossierJson      Json             @default("{}") @map("dossier_json")
+  metricsJson      Json             @default("{}") @map("metrics_json")
+
+  citizenReports    CitizenReport[]
+  escalationHistory EscalationHistory[]
+  pipelineRuns      PipelineRun[]
+  reasoningLogs     ReasoningLog[]
+  emergencyActions  EmergencyAction[]
+  executionLogs     ExecutionLog[]
+  trafficUpdates    TrafficUpdate[]
+  alerts            Alert[]
+  rescueTeams       RescueTeam[]
+  crisisMemories    CrisisMemory[]
+  snapshots         CityStateSnapshot[]
+
+  @@index([status, openedAt(sort: Desc)], map: "idx_crisis_events_status_opened")
+  @@index([crisisType, areaLabel], map: "idx_crisis_events_type_area")
+  @@index([escalation, openedAt(sort: Desc)], map: "idx_crisis_events_escalation")
+  @@map("crisis_events")
+}
+
+model EscalationHistory {
+  id              String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId        String           @map("crisis_id") @db.Uuid
+  fromSeverity    SeverityLevel?   @map("from_severity")
+  toSeverity      SeverityLevel    @map("to_severity")
+  fromEscalation  EscalationLevel? @map("from_escalation")
+  toEscalation    EscalationLevel  @map("to_escalation")
+  reason          String
+  triggeredBy     String           @default("severity_reasoning_agent") @map("triggered_by") @db.VarChar(64)
+  confidence      Float?
+  factors         Json             @default("[]")
+  domainEventId   String?          @map("domain_event_id") @db.Uuid
+  recordedAt      DateTime         @default(now()) @map("recorded_at") @db.Timestamptz
+
+  crisis      CrisisEvent  @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  domainEvent DomainEvent? @relation(fields: [domainEventId], references: [id], onDelete: SetNull)
+
+  @@index([crisisId, recordedAt(sort: Desc)], map: "idx_escalation_history_crisis_time")
+  @@map("escalation_history")
+}
+
+// ---------------------------------------------------------------------------
+// Ingestion
+// ---------------------------------------------------------------------------
+
+model CitizenReport {
+  id             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId       String?        @map("crisis_id") @db.Uuid
+  source         ReportSource
+  rawText        String         @map("raw_text")
+  normalizedText String?        @map("normalized_text")
+  language       ReportLanguage @default(en)
+  lat            Float?
+  lng            Float?
+  areaLabel      String?        @map("area_label") @db.VarChar(128)
+  entities       Json           @default("[]")
+  sentiment      Float?
+  confidence     Float          @default(0.7)
+  verified       Boolean        @default(false)
+  ingestedAt     DateTime       @default(now()) @map("ingested_at") @db.Timestamptz
+  linkedAt       DateTime?      @map("linked_at") @db.Timestamptz
+  metadata       Json           @default("{}")
+
+  crisis CrisisEvent? @relation(fields: [crisisId], references: [id], onDelete: SetNull)
+
+  @@index([ingestedAt(sort: Desc)], map: "idx_citizen_reports_ingested")
+  @@index([crisisId, ingestedAt(sort: Desc)], map: "idx_citizen_reports_crisis")
+  @@map("citizen_reports")
+}
+
+// ---------------------------------------------------------------------------
+// Orchestration
+// ---------------------------------------------------------------------------
+
+model PipelineRun {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId      String    @map("crisis_id") @db.Uuid
+  planVersion   Int       @default(1) @map("plan_version")
+  status        String    @default("running") @db.VarChar(32)
+  correlationId String?   @map("correlation_id") @db.Uuid
+  model         String?   @db.VarChar(64)
+  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz
+  errorMessage  String?   @map("error_message")
+
+  crisis          CrisisEvent         @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  reasoningLogs   ReasoningLog[]
+  emergencyActions EmergencyAction[]
+  snapshots       CityStateSnapshot[]
+
+  @@index([crisisId, startedAt(sort: Desc)], map: "idx_pipeline_runs_crisis")
+  @@map("pipeline_runs")
+}
+
+model ReasoningLog {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId      String   @map("crisis_id") @db.Uuid
+  pipelineRunId String?  @map("pipeline_run_id") @db.Uuid
+  agentName     String   @map("agent_name") @db.VarChar(64)
+  stepIndex     Int      @default(0) @map("step_index")
+  status        String   @default("completed") @db.VarChar(16)
+  thought       String
+  evidenceRefs  Json     @default("[]") @map("evidence_refs")
+  inputJson     Json?    @map("input_json")
+  outputJson    Json?    @map("output_json")
+  model         String?  @db.VarChar(64)
+  latencyMs     Int?     @map("latency_ms")
+  domainEventId String?  @map("domain_event_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  crisis      CrisisEvent  @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  pipelineRun PipelineRun? @relation(fields: [pipelineRunId], references: [id], onDelete: Cascade)
+  domainEvent DomainEvent? @relation(fields: [domainEventId], references: [id], onDelete: SetNull)
+
+  @@index([crisisId, agentName, createdAt], map: "idx_reasoning_logs_crisis_agent")
+  @@map("reasoning_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Response execution
+// ---------------------------------------------------------------------------
+
+model EmergencyAction {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId       String       @map("crisis_id") @db.Uuid
+  pipelineRunId  String?      @map("pipeline_run_id") @db.Uuid
+  planVersion    Int          @default(1) @map("plan_version")
+  actionType     String       @map("action_type") @db.VarChar(48)
+  title          String       @db.VarChar(256)
+  payload        Json         @default("{}")
+  priority       Int          @default(5) @db.SmallInt
+  status         ActionStatus @default(draft)
+  idempotencyKey String?      @map("idempotency_key") @db.VarChar(128)
+  scheduledAt    DateTime?    @map("scheduled_at") @db.Timestamptz
+  startedAt      DateTime?    @map("started_at") @db.Timestamptz
+  completedAt    DateTime?    @map("completed_at") @db.Timestamptz
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  crisis         CrisisEvent    @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  pipelineRun    PipelineRun?   @relation(fields: [pipelineRunId], references: [id], onDelete: SetNull)
+  executionLogs  ExecutionLog[]
+  trafficUpdates TrafficUpdate[]
+  alerts         Alert[]
+
+  @@unique([crisisId, idempotencyKey], map: "uq_emergency_actions_idempotency")
+  @@index([crisisId, status, priority], map: "idx_emergency_actions_crisis_status")
+  @@map("emergency_actions")
+}
+
+model ExecutionLog {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId      String   @map("crisis_id") @db.Uuid
+  actionId      String?  @map("action_id") @db.Uuid
+  toolName      String   @map("tool_name") @db.VarChar(64)
+  requestJson   Json?    @map("request_json")
+  responseJson  Json?    @map("response_json")
+  stateDelta    Json     @default("{}") @map("state_delta")
+  status        String   @default("success") @db.VarChar(16)
+  durationMs    Int?     @map("duration_ms")
+  correlationId String?  @map("correlation_id") @db.Uuid
+  executedAt    DateTime @default(now()) @map("executed_at") @db.Timestamptz
+
+  crisis CrisisEvent      @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  action EmergencyAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+
+  @@index([crisisId, executedAt(sort: Desc)], map: "idx_execution_logs_crisis_time")
+  @@map("execution_logs")
+}
+
+model TrafficUpdate {
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId         String    @map("crisis_id") @db.Uuid
+  actionId         String?   @map("action_id") @db.Uuid
+  segmentLabel     String?   @map("segment_label") @db.VarChar(128)
+  fromLat          Float     @map("from_lat")
+  fromLng          Float     @map("from_lng")
+  toLat            Float     @map("to_lat")
+  toLng            Float     @map("to_lng")
+  polylineJson     Json      @default("[]") @map("polyline_json")
+  reason           String?
+  congestionBefore Float?    @map("congestion_before")
+  congestionAfter  Float?    @map("congestion_after")
+  congestionDelta  Float?    @map("congestion_delta")
+  effectiveFrom    DateTime  @default(now()) @map("effective_from") @db.Timestamptz
+  effectiveTo      DateTime? @map("effective_to") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  crisis CrisisEvent      @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  action EmergencyAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+
+  @@index([crisisId, effectiveFrom(sort: Desc)], map: "idx_traffic_updates_crisis")
+  @@map("traffic_updates")
+}
+
+model Alert {
+  id              String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId        String              @map("crisis_id") @db.Uuid
+  actionId        String?             @map("action_id") @db.Uuid
+  zoneLabel       String              @map("zone_label") @db.VarChar(128)
+  messageEn       String              @map("message_en")
+  messageUr       String?             @map("message_ur")
+  messageRomanUr  String?             @map("message_roman_ur")
+  reachEstimate   Int                 @default(0) @map("reach_estimate")
+  deliveryStatus  AlertDeliveryStatus @default(draft) @map("delivery_status")
+  sentAt          DateTime?           @map("sent_at") @db.Timestamptz
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  crisis CrisisEvent      @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  action EmergencyAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+
+  @@index([crisisId, createdAt(sort: Desc)], map: "idx_alerts_crisis")
+  @@map("alerts")
+}
+
+// ---------------------------------------------------------------------------
+// Resources
+// ---------------------------------------------------------------------------
+
+model Hospital {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name           String   @db.VarChar(256)
+  code           String?  @unique @db.VarChar(32)
+  lat            Float
+  lng            Float
+  bedsTotal      Int      @default(0) @map("beds_total")
+  bedsAvailable  Int      @default(0) @map("beds_available")
+  edWaitMinutes  Int?     @map("ed_wait_minutes")
+  heatStressLoad Float?   @map("heat_stress_load")
+  metadata       Json     @default("{}")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  rescueTeams RescueTeam[]
+
+  @@index([lat, lng], map: "idx_hospitals_geo")
+  @@map("hospitals")
+}
+
+model RescueTeam {
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  teamCode     String     @unique @map("team_code") @db.VarChar(32)
+  teamType     String     @map("team_type") @db.VarChar(48)
+  name         String     @db.VarChar(128)
+  lat          Float
+  lng          Float
+  status       TeamStatus @default(available)
+  capacity     Int        @default(1)
+  crisisId     String?    @map("crisis_id") @db.Uuid
+  assignedTask String?    @map("assigned_task")
+  etaMinutes   Int?       @map("eta_minutes")
+  hospitalId   String?    @map("hospital_id") @db.Uuid
+  metadata     Json       @default("{}")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  crisis   CrisisEvent? @relation(fields: [crisisId], references: [id], onDelete: SetNull)
+  hospital Hospital?    @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+
+  @@index([status, teamType], map: "idx_rescue_teams_status")
+  @@map("rescue_teams")
+}
+
+// ---------------------------------------------------------------------------
+// Memory & snapshots
+// ---------------------------------------------------------------------------
+
+/// pgvector column — use raw SQL for similarity search or Unsupported type
+model CrisisMemory {
+  id           String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId     String?     @map("crisis_id") @db.Uuid
+  crisisType   CrisisType? @map("crisis_type")
+  areaLabel    String?     @map("area_label") @db.VarChar(128)
+  summary      String
+  lessons      Json        @default("[]")
+  outcomeScore Float?      @map("outcome_score")
+  /// embedding vector(384) — query via $queryRaw with pgvector
+  validFrom    DateTime    @default(now()) @map("valid_from") @db.Timestamptz
+  validTo      DateTime?   @map("valid_to") @db.Timestamptz
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  crisis CrisisEvent? @relation(fields: [crisisId], references: [id], onDelete: SetNull)
+
+  @@index([crisisType, areaLabel], map: "idx_crisis_memory_type_area")
+  @@map("crisis_memory")
+}
+
+model CityStateSnapshot {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  crisisId      String   @map("crisis_id") @db.Uuid
+  pipelineRunId String?  @map("pipeline_run_id") @db.Uuid
+  phase         String   @db.VarChar(16)
+  metricsJson   Json     @map("metrics_json")
+  mapStateJson  Json     @map("map_state_json")
+  recordedAt    DateTime @default(now()) @map("recorded_at") @db.Timestamptz
+
+  crisis      CrisisEvent  @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+  pipelineRun PipelineRun? @relation(fields: [pipelineRunId], references: [id], onDelete: SetNull)
+
+  @@index([crisisId, phase, recordedAt(sort: Desc)], map: "idx_city_state_snapshots_crisis")
+  @@map("city_state_snapshots")
+}

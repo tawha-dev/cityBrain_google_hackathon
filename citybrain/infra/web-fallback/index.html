@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CityBrain AI — Test Console</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0B0F14; color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    .header { padding: 20px; border-bottom: 1px solid #1E2A38; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+    .logo { color: #00FFC6; font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+    .sub { color: #6B7A8F; font-size: 12px; font-family: monospace; margin-top: 4px; }
+    .badges { display: flex; gap: 12px; flex-wrap: wrap; }
+    .badge { font-family: monospace; font-size: 11px; padding: 6px 10px; border-radius: 4px; border: 1px solid #1E2A38; }
+    .badge.ok { border-color: #00FFC6; color: #00FFC6; }
+    .badge.err { border-color: #FF3B5C; color: #FF3B5C; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; max-width: 1200px; margin: 0 auto; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .panel { background: #121820; border: 1px solid #1E2A38; border-radius: 8px; padding: 16px; }
+    .panel h3 { color: #00FFC6; font-size: 11px; letter-spacing: 2px; margin-bottom: 12px; font-family: monospace; }
+    .btn { display: block; width: 100%; padding: 12px; margin: 6px 0; background: #00FFC620; border: 1px solid #00FFC6; color: #00FFC6; border-radius: 6px; cursor: pointer; font-weight: 600; letter-spacing: 1px; font-size: 13px; }
+    .btn:hover { background: #00FFC640; }
+    .btn.danger { border-color: #FF3B5C; color: #FF3B5C; background: #FF3B5C20; }
+    .btn.secondary { border-color: #1E2A38; color: #6B7A8F; background: #05080C; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .btn-row .btn { width: auto; flex: 1; min-width: 120px; padding: 8px; font-size: 11px; }
+    #signals, #traces, #crises, #resources, #log { font-family: monospace; font-size: 12px; max-height: 220px; overflow-y: auto; }
+    .item { padding: 8px 0; border-bottom: 1px solid #1E2A38; }
+    .tag { color: #FFB020; font-size: 10px; }
+    .trace-agent { color: #00FFC6; }
+    .metric { display: flex; justify-content: space-between; padding: 8px 0; }
+    .metric span:last-child { color: #00FFC6; }
+    .status { padding: 6px 10px; background: #1E2A38; border-radius: 4px; font-size: 11px; font-family: monospace; margin-top: 8px; }
+    input, textarea { width: 100%; background: #05080C; border: 1px solid #1E2A38; color: #E8EDF4; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-bottom: 8px; }
+    textarea { min-height: 64px; resize: vertical; }
+    .log-ok { color: #00FFC6; }
+    .log-err { color: #FF3B5C; }
+    a.crisis-link { color: #00FFC6; text-decoration: none; }
+    a.crisis-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="logo">CITYBRAIN AI</div>
+      <div class="sub">TEST CONSOLE — no curl required</div>
+    </div>
+    <div class="badges">
+      <div id="apiBadge" class="badge">API …</div>
+      <div id="wsBadge" class="badge">WS …</div>
+      <div id="escBadge" class="badge">ESC: WATCH</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel" style="grid-column: 1 / -1">
+      <h3>SYSTEM CHECKS</h3>
+      <div class="btn-row">
+        <button class="btn secondary" onclick="runAllChecks()">Run all checks</button>
+        <button class="btn secondary" onclick="checkHealth()">Health</button>
+        <button class="btn secondary" onclick="loadResources()">Resources</button>
+        <button class="btn secondary" onclick="pollState()">Crises</button>
+        <button class="btn secondary" onclick="loadMemory()">Memory</button>
+      </div>
+      <div class="status" id="status">Ready — tap Run all checks or launch ★ Karachi</div>
+    </div>
+
+    <div class="panel" style="grid-column: 1 / -1">
+      <h3>DEMO SCENARIOS</h3>
+      <button class="btn danger" onclick="runScenario('karachi_flood')">★ KARACHI HEAVY RAIN FLOOD</button>
+      <button class="btn" onclick="runScenario('g10_flood')">G-10 URBAN FLOOD</button>
+      <button class="btn" onclick="runScenario('margalla_heat')">MARGALLA HEATWAVE</button>
+      <button class="btn" onclick="runScenario('srinagar_accident')">SRINAGAR ACCIDENT</button>
+      <button class="btn" onclick="runScenario('i9_grid')">I-9 GRID FAILURE</button>
+      <button class="btn" onclick="runScenario('faiz_road_block')">FAIZ ROAD BLOCK</button>
+    </div>
+
+    <div class="panel">
+      <h3>CITY RESOURCES</h3>
+      <div id="resources">Tap Resources or Run all checks</div>
+    </div>
+
+    <div class="panel">
+      <h3>INGEST SIGNAL</h3>
+      <input id="sigSource" value="citizen" placeholder="source" />
+      <input id="sigArea" value="Clifton, Karachi" placeholder="area" />
+      <textarea id="sigText">Pani ghar tak aa gaya — Clifton Block 4</textarea>
+      <button class="btn" onclick="ingestSignal()">Send signal</button>
+    </div>
+
+    <div class="panel">
+      <h3>LIVE SIGNAL FEED</h3>
+      <div id="signals">Awaiting signals…</div>
+    </div>
+
+    <div class="panel">
+      <h3>AGENT TRACE</h3>
+      <div id="traces">Pipeline idle</div>
+    </div>
+
+    <div class="panel">
+      <h3>BEFORE / AFTER</h3>
+      <div class="metric"><span>Congestion</span><span id="cong">-</span></div>
+      <div class="metric"><span>Stranded</span><span id="strand">-</span></div>
+      <button class="btn secondary" style="margin-top:8px" onclick="reanalyze()" id="reanalyzeBtn" disabled>Re-analyze crisis</button>
+    </div>
+
+    <div class="panel" style="grid-column: 1 / -1">
+      <h3>ACTIVE CRISES</h3>
+      <div id="crises">None</div>
+    </div>
+
+    <div class="panel" style="grid-column: 1 / -1">
+      <h3>API LOG</h3>
+      <div id="log">—</div>
+    </div>
+  </div>
+
+  <script>
+    const API = (window.location.port === '8081' || window.location.port === '80') ? '' : 'http://localhost:4000';
+    const WS_URL = (window.location.protocol === 'https:' ? 'wss:' : 'ws:')
+      + '//' + (window.location.port === '8081' || window.location.port === '80' ? window.location.host : 'localhost:4000')
+      + '/ws';
+    let ws, crisisId, pipelinePollTimer, liveTraceCount = 0;
+
+    function log(label, ok, detail) {
+      var el = document.getElementById('log');
+      if (el.textContent === '—') el.innerHTML = '';
+      var cls = ok ? 'log-ok' : 'log-err';
+      el.innerHTML = '<div class="item"><span class="' + cls + '">[' + new Date().toLocaleTimeString() + '] ' + (ok ? 'OK' : 'ERR') + ' ' + label + '</span><br>' + detail + '</div>' + el.innerHTML;
+    }
+
+    function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+    function connectWs() {
+      ws = new WebSocket(WS_URL);
+      ws.onopen = function() {
+        document.getElementById('wsBadge').textContent = 'WS OK';
+        document.getElementById('wsBadge').className = 'badge ok';
+      };
+      ws.onclose = function() {
+        document.getElementById('wsBadge').textContent = 'WS DOWN';
+        document.getElementById('wsBadge').className = 'badge err';
+        setTimeout(connectWs, 3000);
+      };
+      ws.onmessage = function(e) {
+        var ev = JSON.parse(e.data);
+        if (ev.type === 'signal.new') addSignal(ev.payload);
+        if (ev.type === 'agent.step' && ev.payload) addTrace(ev.payload);
+        if (ev.type === 'escalation.changed') {
+          document.getElementById('escBadge').textContent = 'ESC: ' + (ev.payload.level || 'operational').toUpperCase();
+        }
+        if (ev.type === 'pipeline.failed') {
+          setStatus('Pipeline failed — ' + (ev.payload.error || 'see API log'));
+          if (pipelinePollTimer) { clearInterval(pipelinePollTimer); pipelinePollTimer = null; }
+        }
+        if (ev.type === 'pipeline.complete' || ev.type === 'pipeline.failed' || ev.type === 'crisis.updated') {
+          refreshCrisisUi();
+        }
+      };
+    }
+
+    function parseMetricsJson(snapshot) {
+      if (!snapshot) return null;
+      var m = snapshot.metrics_json;
+      if (typeof m === 'string') {
+        try { m = JSON.parse(m); } catch (err) { return null; }
+      }
+      return m;
+    }
+
+    function formatPct(n) {
+      if (n == null || isNaN(n)) return '—';
+      return n <= 1 ? Math.round(n * 100) + '%' : Math.round(n);
+    }
+
+    function applyMetrics(state) {
+      var beforeM = parseMetricsJson(state.before);
+      var afterM = parseMetricsJson(state.after);
+      if (!beforeM && !afterM) {
+        document.getElementById('cong').textContent = '— (pipeline still running…)';
+        document.getElementById('strand').textContent = '—';
+        return false;
+      }
+      var bCong = beforeM && beforeM.congestionIndex != null ? beforeM.congestionIndex : null;
+      var aCong = afterM && afterM.congestionIndex != null ? afterM.congestionIndex : null;
+      var bStr = beforeM && beforeM.strandedVehicles != null ? beforeM.strandedVehicles : null;
+      var aStr = afterM && afterM.strandedVehicles != null ? afterM.strandedVehicles : null;
+      document.getElementById('cong').textContent =
+        formatPct(bCong) + ' → ' + (aCong != null ? formatPct(aCong) : '…');
+      document.getElementById('strand').textContent =
+        (bStr != null ? bStr : '—') + ' → ' + (aStr != null ? aStr : '…');
+      return true;
+    }
+
+    function loadTraces() {
+      if (!crisisId) return Promise.resolve();
+      return fetch((API || '') + '/api/v1/crises/' + crisisId + '/traces')
+        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function(data) {
+          var traces = data.traces || [];
+          var el = document.getElementById('traces');
+          if (!traces.length) {
+            if (el.dataset.idle === '0' || liveTraceCount > 0) return;
+            el.dataset.idle = '1';
+            el.innerHTML = '<div class="item" style="color:#6B7A8F">Pipeline running — waiting for agent steps…</div>';
+            return;
+          }
+          el.dataset.idle = '0';
+          liveTraceCount = traces.length;
+          el.innerHTML = '';
+          traces.forEach(function(t) {
+            var thought = t.thought || '';
+            if (!thought && t.traces && t.traces.length) {
+              thought = t.traces.map(function(rt) { return rt.thought; }).join(' ');
+            }
+            addTrace({ agent: t.agent_name || t.agentName || 'agent', status: 'completed', thought: thought });
+          });
+        })
+        .catch(function() {});
+    }
+
+    function refreshCrisisUi() {
+      pollState();
+      loadTraces();
+    }
+
+    function startPipelinePolling() {
+      if (pipelinePollTimer) clearInterval(pipelinePollTimer);
+      pipelinePollTimer = setInterval(function() {
+        if (!crisisId) return;
+        refreshCrisisUi();
+        fetch((API || '') + '/api/v1/crises/' + crisisId)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var status = data.crisis && data.crisis.status;
+            if (status && status !== 'analyzing' && status !== 'detecting') {
+              clearInterval(pipelinePollTimer);
+              pipelinePollTimer = null;
+              setStatus('Pipeline ' + status + ' — crisis ' + crisisId.slice(0, 8) + '…');
+            }
+          })
+          .catch(function() {});
+      }, 2500);
+    }
+
+    function addSignal(p) {
+      var el = document.getElementById('signals');
+      if (el.textContent.indexOf('Awaiting') === 0) el.innerHTML = '';
+      el.innerHTML = '<div class="item"><span class="tag">[' + (p.source||'').toUpperCase() + ']</span> ' + (p.rawText || '') + '</div>' + el.innerHTML;
+    }
+
+    function addTrace(p) {
+      var el = document.getElementById('traces');
+      if (el.dataset.idle !== '0') {
+        el.innerHTML = '';
+        el.dataset.idle = '0';
+        liveTraceCount = 0;
+      }
+      liveTraceCount += 1;
+      var label = (p.agent || 'agent') + (p.status === 'started' ? ' … running' : '');
+      el.innerHTML += '<div class="item"><span class="trace-agent">' + label + '</span> ' + (p.thought || '') + '</div>';
+    }
+
+    function checkHealth() {
+      return fetch((API || '') + '/api/v1/health').then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function(d) {
+        document.getElementById('apiBadge').textContent = 'API OK';
+        document.getElementById('apiBadge').className = 'badge ok';
+        log('Health', true, JSON.stringify(d));
+        return d;
+      }).catch(function(e) {
+        document.getElementById('apiBadge').textContent = 'API DOWN';
+        document.getElementById('apiBadge').className = 'badge err';
+        log('Health', false, e.message);
+        throw e;
+      });
+    }
+
+    function loadResources() {
+      return fetch((API || '') + '/api/v1/resources').then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function(data) {
+        var list = data.resources || [];
+        document.getElementById('resources').innerHTML = list.map(function(r) {
+          return '<div class="item"><strong>' + r.type + '</strong> ' + r.name + '<br><span class="tag">' + r.status + '</span></div>';
+        }).join('') || 'No resources';
+        log('Resources', true, list.length + ' units');
+      }).catch(function(e) { log('Resources', false, e.message); });
+    }
+
+    function loadMemory() {
+      return fetch((API || '') + '/api/v1/memory').then(function(r) { return r.json(); }).then(function(d) {
+        log('Memory', true, (d.memory || []).length + ' entries');
+      }).catch(function(e) { log('Memory', false, e.message); });
+    }
+
+    function runScenario(key) {
+      setStatus('Launching ' + key + '…');
+      document.getElementById('signals').innerHTML = 'Awaiting signals…';
+      var tracesEl = document.getElementById('traces');
+      tracesEl.innerHTML = 'Pipeline idle';
+      tracesEl.dataset.idle = '1';
+      liveTraceCount = 0;
+      fetch((API || '') + '/api/v1/demo/scenarios/' + key + '/run', { method: 'POST' })
+        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function(data) {
+          crisisId = data.crisisId;
+          document.getElementById('reanalyzeBtn').disabled = false;
+          setStatus('Pipeline running — crisis ' + crisisId.slice(0, 8) + '…');
+          log('Scenario ' + key, true, 'crisisId ' + crisisId);
+          startPipelinePolling();
+          refreshCrisisUi();
+        })
+        .catch(function(e) { setStatus('Failed'); log('Scenario', false, e.message); });
+    }
+
+    function ingestSignal() {
+      var body = {
+        source: document.getElementById('sigSource').value,
+        rawText: document.getElementById('sigText').value,
+        areaLabel: document.getElementById('sigArea').value,
+        language: 'en',
+        location: { lat: 24.8138, lng: 67.0299 }
+      };
+      fetch((API || '') + '/api/v1/signals/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function(d) {
+          var n = d.ingested != null ? d.ingested : (d.ids || []).length;
+          if (!n) { log('Ingest', false, '0 signals — check payload'); return; }
+          log('Ingest', true, n + ' signal(s) · ids: ' + (d.ids || []).join(', '));
+        })
+        .catch(function(e) { log('Ingest', false, e.message); });
+    }
+
+    function reanalyze() {
+      if (!crisisId) return;
+      var tracesEl = document.getElementById('traces');
+      tracesEl.innerHTML = 'Re-analyzing…';
+      tracesEl.dataset.idle = '1';
+      fetch((API || '') + '/api/v1/crises/' + crisisId + '/analyze', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          log('Re-analyze', true, d.status || 'started');
+          startPipelinePolling();
+          refreshCrisisUi();
+        })
+        .catch(function(e) { log('Re-analyze', false, e.message); });
+    }
+
+    function pollState() {
+      fetch((API || '') + '/api/v1/crises').then(function(r) { return r.json(); }).then(function(data) {
+        document.getElementById('crises').innerHTML = (data.crises || []).map(function(c) {
+          var selected = crisisId === c.id ? ' <span class="tag">◀ selected</span>' : '';
+          return '<div class="item"><strong>' + c.title + '</strong><br><span class="tag">' + c.status + '</span>' + selected + '<br>' +
+            '<a class="crisis-link" href="#" onclick="selectCrisis(\'' + c.id + '\');return false">Select for metrics →</a></div>';
+        }).join('') || 'None';
+      });
+      if (!crisisId) return Promise.resolve();
+      return fetch((API || '') + '/api/v1/crises/' + crisisId + '/state')
+        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function(state) { applyMetrics(state); })
+        .catch(function() {});
+    }
+
+    function selectCrisis(id) {
+      crisisId = id;
+      document.getElementById('reanalyzeBtn').disabled = false;
+      setStatus('Selected crisis ' + id.slice(0, 8) + '… — loading metrics & traces');
+      log('Select crisis', true, id);
+      refreshCrisisUi();
+    }
+
+    function runAllChecks() {
+      setStatus('Running checks…');
+      Promise.all([checkHealth(), loadResources(), pollState(), loadMemory()])
+        .then(function() { setStatus('All checks done'); })
+        .catch(function() { setStatus('Some checks failed — see log'); });
+    }
+
+    connectWs();
+    runAllChecks();
+    setInterval(pollState, 8000);
+  </script>
+</body>
+</html>

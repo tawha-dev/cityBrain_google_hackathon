@@ -1,0 +1,21 @@
+# Secrets / local config
+env/dev.json
+android/local.properties
+assets/config/api_config.json
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,28 @@
+-- Optional: backward-compatible views mapping v1 (001) tables to v2 names
+-- Run only when both 001_init and 002_v2_schema coexist during migration window
+
+-- CREATE OR REPLACE VIEW crisis_events_v1_compat AS
+-- SELECT
+--   id,
+--   0 AS aggregate_version,
+--   scenario_key,
+--   type::text::crisis_type AS crisis_type,
+--   status::text::crisis_status AS status,
+--   title,
+--   area_label,
+--   summary,
+--   severity::text::severity_level AS severity,
+--   escalation_level::text::escalation_level AS escalation,
+--   confidence,
+--   centroid_lat,
+--   centroid_lng,
+--   500 AS affected_radius_m,
+--   NULL::jsonb AS bbox_json,
+--   created_at AS opened_at,
+--   NULL::timestamptz AS closed_at,
+--   created_at AS valid_from,
+--   NULL::timestamptz AS valid_to,
+--   updated_at,
+--   dossier_json,
+--   '{}'::jsonb AS metrics_json
+-- FROM crises;

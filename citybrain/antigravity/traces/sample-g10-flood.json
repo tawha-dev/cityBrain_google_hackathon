@@ -1,0 +1,20 @@
+{
+  "workplan": "CityBrain G-10 Flood Response",
+  "scenario": "g10_flood",
+  "tasks": [
+    { "id": 1, "agent": "signal_extraction", "status": "completed", "latencyMs": 420 },
+    { "id": 2, "agent": "crisis_detection", "status": "completed", "thought": "Fused cluster: Urban Flooding — G-10 (91% confidence)" },
+    { "id": 3, "agent": "severity_reasoning", "status": "completed", "output": { "escalationLevel": "critical" } },
+    { "id": 4, "agent": "planning", "status": "completed" },
+    { "id": 5, "agent": "resource_allocation", "status": "completed" },
+    { "id": 6, "agent": "traffic_rerouting", "status": "completed", "tool": "google_routes" },
+    { "id": 7, "agent": "citizen_alert", "status": "completed", "reach": 12400 },
+    { "id": 8, "agent": "execution", "status": "completed", "actionsExecuted": 3 },
+    { "id": 9, "agent": "reflection", "status": "completed", "replanRequired": true, "reason": "Kashmir Hwy still overloaded" }
+  ],
+  "outcome": {
+    "congestionReduction": 0.32,
+    "strandedReduction": 0.18,
+    "alertsDelivered": 12400
+  }
+}

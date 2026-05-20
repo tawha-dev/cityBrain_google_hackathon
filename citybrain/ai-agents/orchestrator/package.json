@@ -1,0 +1,18 @@
+{
+  "name": "@citybrain/orchestrator",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@citybrain/agent-tools": "*",
+    "@citybrain/shared": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

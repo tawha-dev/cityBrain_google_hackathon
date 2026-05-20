@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "CityBrain AI",
+    "slug": "citybrain-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "citybrain",
+    "userInterfaceStyle": "dark",
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-router"]
+  }
+}
