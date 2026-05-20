@@ -38,6 +38,14 @@ docker compose up --build -d
 ```
 
 Once running, access the following:
+
+### 🌐 Live Deployed Environment (Production)
+* **Tactical Command Center (Web)**: [https://citybrain.tawha.com](https://citybrain.tawha.com)
+* **API Gateway**: [https://api.citybrain.tawha.com](https://api.citybrain.tawha.com)
+* **API Health Check**: [https://api.citybrain.tawha.com/health](https://api.citybrain.tawha.com/health)
+* **WebSocket Endpoint**: `wss://api.citybrain.tawha.com/ws`
+
+### 💻 Local Environment (Docker Compose)
 * **Tactical Command Center (Web)**: `http://localhost:8081` (Expo Web Build)
 * **API Gateway**: `http://localhost:4000`
 * **API Health Check**: `http://localhost:4000/health`
@@ -142,8 +150,12 @@ reflection                 ← outcome score; replan if threshold not met
 To demo the complete system end-to-end as a judge would:
 
 ### 1. Launch the Karachi Flood Demo Scenario
-Using the Web Command Center or via `curl`:
+Using the Deployed Web Dashboard or via `curl`:
 ```bash
+# Deployed Production URL:
+curl -X POST https://api.citybrain.tawha.com/api/v1/demo/scenarios/karachi_flood/run
+
+# Or Local URL:
 curl -X POST http://localhost:4000/api/v1/demo/scenarios/karachi_flood/run
 ```
 
