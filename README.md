@@ -45,12 +45,6 @@ Once running, access the following:
 * **API Health Check**: [https://api.citybrain.tawha.com/health](https://api.citybrain.tawha.com/health)
 * **WebSocket Endpoint**: `wss://api.citybrain.tawha.com/ws`
 
-### 💻 Local Environment (Docker Compose)
-* **Tactical Command Center (Web)**: `http://localhost:8081` (Expo Web Build)
-* **API Gateway**: `http://localhost:4000`
-* **API Health Check**: `http://localhost:4000/health`
-* **PostgreSQL Database**: `localhost:5432`
-
 ---
 
 ## 🌟 Hackathon Challenge Alignment (Challenge 3: CIRO)
