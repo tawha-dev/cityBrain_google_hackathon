@@ -44,6 +44,7 @@ Once running, access the following:
 * **API Gateway**: [https://api.citybrain.tawha.com](https://api.citybrain.tawha.com)
 * **API Health Check**: [https://api.citybrain.tawha.com/health](https://api.citybrain.tawha.com/health)
 * **WebSocket Endpoint**: `wss://api.citybrain.tawha.com/ws`
+* **APK URL**: [https://drive.google.com/file/d/1FlLveh5j6s2wznQozRX0mJWZc6jAGXbI/view?usp=drive_link]([https://api.citybrain.tawha.com/health](https://drive.google.com/file/d/1FlLveh5j6s2wznQozRX0mJWZc6jAGXbI/view?usp=drive_link))
 
 ---
 
