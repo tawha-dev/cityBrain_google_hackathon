@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityBrain AI — Autonomous Crisis Intelligence Operating System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- CDNs: TailwindCSS, GSAP, Three.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#030508',
+                        panel: 'rgba(11, 19, 30, 0.45)',
+                        panelBorder: 'rgba(30, 42, 56, 0.5)',
+                        cyanAccent: '#00FFC6',
+                        purpleAccent: '#8B5CF6',
+                        dangerAccent: '#FF3B5C',
+                        warnAccent: '#FFB020',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    },
+                    boxShadow: {
+                        glow: '0 0 25px rgba(0, 255, 198, 0.25)',
+                        glowPurple: '0 0 25px rgba(139, 92, 246, 0.25)',
+                        glowDanger: '0 0 25px rgba(255, 59, 92, 0.25)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Hide scrollbars for cinematic fullscreen feel */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            cursor: none;
+            /* custom cursor */
+        }
+
+        /* Custom Pointer */
+        .custom-cursor {
+            width: 8px;
+            height: 8px;
+            background: #00FFC6;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            transition: transform 0.1s ease;
+            box-shadow: 0 0 10px #00FFC6, 0 0 20px #00FFC6;
+        }
+
+        .custom-cursor-glow {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 255, 198, 0.3);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s cubic-bezier(0.1, 0.8, 0.3, 1);
+            background: rgba(0, 255, 198, 0.02);
+            mix-blend-mode: screen;
+        }
+
+        /* Glassmorphism primitives */
+        .glass-panel {
+            background: rgba(8, 14, 23, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(30, 42, 56, 0.45);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Hover glows */
+        .glass-panel:hover {
+            border-color: rgba(0, 255, 198, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 255, 198, 0.15);
+        }
+
+        /* Slide structure */
+        .slide-scene {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.95) translateZ(-50px);
+            transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 1.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5vh 5vw;
+        }
+
+        .slide-scene.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateZ(0);
+            z-index: 10;
+        }
+
+        .slide-scene.stretch-slide {
+            align-items: stretch;
+        }
+
+        .slide-scene.stretch-slide > * {
+            width: 100%;
+        }
+
+        .slide-scene.exit {
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(1.05) translateZ(50px);
+        }
+
+        /* Ambient scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+
+        /* Title letter reveal */
+        .char-reveal {
+            display: inline-block;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        /* Sliding Split screen slider */
+        .slider-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #00FFC6;
+            cursor: ew-resize;
+            touch-action: none;
+            box-shadow: 0 0 10px #00FFC6, 0 0 20px #00FFC6;
+            z-index: 20;
+        }
+
+        .slider-handle-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #030508;
+            border: 2px solid #00FFC6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00FFC6;
+            box-shadow: 0 0 15px rgba(0, 255, 198, 0.5);
+            font-size: 0.8rem;
+        }
+
+        /* Holographic grid overlay */
+        .hud-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(0, 255, 198, 0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        /* Slide typography helpers */
+        .slide-header {
+            margin-bottom: 0.5rem;
+        }
+
+        .slide-tagline {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #00FFC6;
+            display: block;
+            margin-bottom: 0.35rem;
+        }
+
+        .slide-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(1.75rem, 3vw, 2.5rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.1;
+        }
+
+        .slide-title span {
+            color: #00FFC6;
+        }
+
+        .keyboard-key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.5rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 0.25rem;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(15, 23, 42, 0.6);
+            font-size: 0.65rem;
+        }
+
+        /* Before/After comparison layers */
+        .comparison-layer {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            padding: 2rem 3rem;
+        }
+
+        .comparison-chaos {
+            z-index: 1;
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.35) 0%, rgba(3, 5, 8, 0.85) 100%);
+        }
+
+        .comparison-clarity {
+            z-index: 2;
+            background: linear-gradient(225deg, rgba(6, 78, 59, 0.35) 0%, rgba(3, 5, 8, 0.85) 100%);
+            justify-content: flex-end;
+        }
+
+        #comparison-container {
+            min-height: 280px;
+            height: 42vh;
+        }
+
+        /* Console fills remaining panel height */
+        .console-panel {
+            min-height: 0;
+            flex: 1 1 auto;
+        }
+
+        .console-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        /* Roadmap timeline connector */
+        .roadmap-connector {
+            position: absolute;
+            top: 2.75rem;
+            left: 16.67%;
+            right: 16.67%;
+            height: 2px;
+            background: linear-gradient(to right, #00FFC6, #8B5CF6, rgba(100, 116, 139, 0.5));
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .roadmap-milestone {
+            position: relative;
+            z-index: 2;
+        }
+
+        .roadmap-node {
+            position: relative;
+            z-index: 3;
+        }
+
+        /* Visual rainfall overlay */
+        #rain-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+
+        #rain-canvas.active {
+            opacity: 1;
+        }
+
+        body.monsoon-active .scanlines {
+            opacity: 0.25;
+        }
+
+        body.monsoon-active #bg-canvas-container {
+            opacity: 0.95;
+        }
+
+        /* Layout variables */
+        :root {
+            --header-h: 4.25rem;
+            --footer-h: 3.75rem;
+        }
+
+        main {
+            padding-top: var(--header-h);
+            padding-bottom: var(--footer-h);
+            box-sizing: border-box;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .presentation-header {
+            min-height: var(--header-h);
+        }
+
+        .presentation-footer {
+            min-height: var(--footer-h);
+        }
+
+        /* Touch / mobile: normal cursor, hide side HUD */
+        @media (max-width: 1023px) {
+            .telemetry-hud {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            body {
+                cursor: auto;
+            }
+
+            .custom-cursor,
+            .custom-cursor-glow {
+                display: none !important;
+            }
+
+            .slide-scene {
+                padding: 0.75rem 0.875rem;
+                overflow-x: hidden;
+                overflow-y: auto;
+                align-items: flex-start;
+                justify-content: flex-start;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .slide-scene.stretch-slide {
+                min-height: 100%;
+            }
+
+            #comparison-container {
+                min-height: 220px;
+                height: min(38vh, 320px);
+            }
+
+            .comparison-layer {
+                padding: 1rem 0.875rem;
+                align-items: flex-start;
+                padding-top: 2.5rem;
+            }
+
+            .comparison-layer .max-w-md {
+                max-width: 100%;
+            }
+
+            .comparison-chaos h3,
+            .comparison-clarity h3 {
+                font-size: 1.1rem;
+            }
+
+            .comparison-layer .font-mono.text-sm {
+                font-size: 0.65rem;
+            }
+
+            .comparison-layer .comparison-points > div:nth-child(n+4) {
+                display: none;
+            }
+
+            .slider-handle-dot {
+                width: 28px;
+                height: 28px;
+                font-size: 0.7rem;
+            }
+
+            .console-panel {
+                min-height: 200px;
+            }
+
+            .roadmap-connector {
+                display: none !important;
+            }
+
+            #slide-1 .lg\:col-span-5 {
+                border-right: none !important;
+                padding-right: 0 !important;
+            }
+
+            #slide-5 .glass-panel.rounded-xl.overflow-hidden {
+                overflow-x: auto;
+            }
+
+            #slide-5 .glass-panel.rounded-xl.overflow-hidden .grid {
+                min-width: 480px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --header-h: 5.5rem;
+                --footer-h: 4.25rem;
+            }
+
+            .slide-title {
+                font-size: 1.35rem;
+            }
+
+            .slide-tagline {
+                font-size: 0.65rem;
+                letter-spacing: 0.08em;
+            }
+
+            #comparison-container {
+                min-height: 180px;
+                height: 28vh;
+            }
+
+            .header-controls .header-label {
+                display: none;
+            }
+        }
+
+        /* Prefer dynamic viewport on mobile browsers */
+        @supports (height: 100dvh) {
+            body {
+                height: 100dvh;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-void text-slate-200 font-sans h-screen min-h-screen overflow-hidden select-none relative">
+
+    <!-- Custom Cursor elements -->
+    <div id="custom-cursor" class="custom-cursor"></div>
+    <div id="custom-cursor-glow" class="custom-cursor-glow"></div>
+
+    <!-- Ambient Overlays -->
+    <div class="scanlines"></div>
+    <div class="hud-grid"></div>
+    <canvas id="rain-canvas" aria-hidden="true"></canvas>
+
+    <!-- Master backgrounds -->
+    <div id="bg-canvas-container" class="absolute inset-0 z-0 opacity-80 pointer-events-none"></div>
+
+    <!-- NASA Telemetry Borders (desktop only) -->
+    <div
+        class="telemetry-hud absolute top-1/2 left-2 xl:left-6 z-60 pointer-events-none hidden lg:flex flex-col items-start gap-1 xl:gap-2 text-[10px] xl:text-xs font-mono tracking-widest text-slate-500 transform -translate-y-1/2 max-w-[140px] xl:max-w-none">
+        <span class="flex items-center gap-1.5"><span
+                class="w-1.5 h-1.5 bg-cyanAccent rounded-full animate-ping"></span> SYSTEM ACTIVE</span>
+        <span>|</span>
+        <span>LOC: KARACHI / ISLAMABAD</span>
+        <span>|</span>
+        <span id="telemetry-coords">SYS.COORD: 24.8607° N, 67.0011° E</span>
+    </div>
+
+    <div
+        class="telemetry-hud absolute top-1/2 right-2 xl:right-6 z-60 pointer-events-none hidden lg:flex flex-col items-end gap-1 xl:gap-2 text-[10px] xl:text-xs font-mono tracking-widest text-slate-500 transform -translate-y-1/2">
+        <span class="flex items-center gap-1.5"><span
+                class="w-1.5 h-1.5 bg-cyanAccent rounded-full animate-ping"></span> SYSTEM ACTIVE</span>
+        <span>FPS: <span id="telemetry-fps">60</span></span>
+        <span>|</span>
+        <span>FLOW.SPEED: <span id="telemetry-speed">1.4m/s</span></span>
+        <span>|</span>
+        <span>LEVEL: <span id="telemetry-level" class="text-cyanAccent font-semibold">CRITICAL</span></span>
+    </div>
+
+    <!-- Audio / Presenter Controls in header -->
+    <header class="presentation-header absolute top-0 left-0 w-full px-3 sm:px-6 md:px-8 lg:px-12 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 z-50">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 bg-cyanAccent rounded-full shadow-[0_0_10px_#00FFC6]" id="logo-node"></div>
+            <span class="font-outfit text-base sm:text-xl font-bold tracking-tight text-white truncate">CityBrain <span
+                    class="text-cyanAccent">AI</span></span>
+            <span class="header-label hidden md:inline text-xs font-mono text-slate-500 border-l border-slate-800 pl-3">OPERATIONAL OS</span>
+        </div>
+
+        <div class="header-controls flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end">
+            <button id="sound-btn" onclick="toggleAmbientSynth()"
+                class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-slate-400 hover:text-cyanAccent transition-colors flex items-center gap-1.5">
+                <span id="sound-icon">🔈</span> <span class="hidden sm:inline">SOUND OFF</span>
+            </button>
+
+            <div class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-cyanAccent flex items-center gap-1.5">
+                <span class="hidden sm:inline">SIM:</span>
+                <select id="rain-intensity" onchange="changeRainIntensity(this.value)"
+                    class="bg-transparent border-none text-cyanAccent outline-none font-semibold text-[10px] sm:text-xs max-w-[5.5rem] sm:max-w-none">
+                    <option value="none" selected class="bg-void text-slate-400">Off</option>
+                    <option value="low" class="bg-void text-slate-400">Rain Low</option>
+                    <option value="heavy" class="bg-void text-slate-400">Flood High</option>
+                </select>
+            </div>
+
+            <div class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-white shrink-0" id="slide-num">01 / 06</div>
+        </div>
+    </header>
+
+    <!-- Presentation Stage Container -->
+    <main class="w-full h-full relative z-10">
+
+        <!-- SLIDE 1: Title & Team Introduction -->
+        <section class="slide-scene active overflow-y-auto lg:overflow-hidden" id="slide-1">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start lg:items-center w-full max-w-7xl py-1 lg:py-0">
+
+                <!-- Left Title Section -->
+                <div class="lg:col-span-5 flex flex-col justify-center h-full pr-0 lg:pr-4 border-0 lg:border-r border-slate-900">
+                    <span class="font-mono text-cyanAccent tracking-widest text-xs sm:text-sm uppercase mb-2 block opacity-80"
+                        id="slide-1-subtitle">Google Antigravity Hackathon 2026 · Regional Finals</span>
+                    <h1 class="font-outfit text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-none tracking-tight mb-3"
+                        id="slide-1-title">
+                        CITYBRAIN <span
+                            class="text-transparent bg-clip-text bg-gradient-to-r from-cyanAccent to-purpleAccent">AI</span>
+                    </h1>
+                    <p class="text-white text-sm sm:text-base font-medium leading-relaxed mb-3">
+                        Team CityBrain — <span class="text-cyanAccent">Challenge 3: Crisis Intelligence &amp; Response Orchestrator (CIRO)</span>
+                    </p>
+                    <p class="text-slate-400 text-sm sm:text-base leading-relaxed mb-4 font-light">
+                        The <strong class="text-white font-medium">only CIRO submission</strong> that ships a full autonomous
+                        operating system — not a chatbot, not a dashboard. Nine AI agents observe, reason, plan, execute,
+                        measure, and <em class="text-cyanAccent not-italic">adapt in real time</em> when the first response
+                        isn't enough.
+                    </p>
+
+                    <div class="flex gap-2 flex-wrap mb-4">
+                        <span class="text-xs font-mono bg-cyanAccent/10 text-cyanAccent px-3 py-1.5 rounded-md border border-cyanAccent/20">✓ Live Production Deploy</span>
+                        <span class="text-xs font-mono bg-purpleAccent/10 text-purpleAccent px-3 py-1.5 rounded-md border border-purpleAccent/20">✓ Antigravity-Native</span>
+                        <span class="text-xs font-mono bg-panel text-white px-3 py-1.5 rounded-md border border-slate-800">✓ Mobile App Built</span>
+                        <span class="text-xs font-mono bg-panel text-white px-3 py-1.5 rounded-md border border-slate-800">✓ Closed-Loop Replan</span>
+                    </div>
+
+                    <div class="glass-panel p-3 sm:p-4 rounded-xl border border-cyanAccent/20 text-xs text-slate-400 space-y-1.5">
+                        <p><span class="text-cyanAccent font-mono">JUDGES:</span> Live demo at <a href="https://citybrain.tawha.com"
+                                class="text-white hover:text-cyanAccent transition-colors">citybrain.tawha.com</a> · GitHub · README · Antigravity traces ready</p>
+                        <p><span class="text-purpleAccent font-mono">PITCH:</span> 6 min live · 4 min Q&amp;A · Exactly 6 slides</p>
+                    </div>
+                </div>
+
+                <!-- Right Team Section -->
+                <div class="lg:col-span-7 flex flex-col gap-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="font-outfit text-xl sm:text-2xl font-bold text-white">Core Team</h3>
+                        <span class="text-xs font-mono text-cyanAccent">4 ENGINEERS · 1 VISION</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Daniyal -->
+                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <div class="flex justify-between items-start">
+                                <span class="font-outfit text-lg font-bold text-white">M. Daniyal</span>
+                                <span
+                                    class="text-[10px] font-mono bg-cyanAccent/10 text-cyanAccent px-2 py-0.5 rounded border border-cyanAccent/20 font-semibold">PROJECT
+                                    LEAD</span>
+                            </div>
+                            <span class="text-xs font-mono text-purpleAccent">Full Stack & Prompt Engineer (Age:
+                                22)</span>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-1">Orchestrator architecture, Antigravity workflow design, and judge-facing trace exports — owns the CIRO pipeline end-to-end.</p>
+                        </div>
+
+                        <!-- Ali Hunain -->
+                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <span class="font-outfit text-lg font-bold text-white">Ali Hunain</span>
+                            <span class="text-xs font-mono text-purpleAccent font-medium">Software & AI Agent Engineer
+                                (Age: 23)</span>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-1">Built the 9-agent graph, structured JSON reasoning, and pgvector memory — the brain behind autonomous decisions.</p>
+                        </div>
+
+                        <!-- Muntazir -->
+                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <span class="font-outfit text-lg font-bold text-white">Muntazir Hassan</span>
+                            <span class="text-xs font-mono text-purpleAccent font-medium">Mobile Developer & Prompt
+                                Engineer (Age: 23)</span>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-1">Built the Expo mobile command center (7 crisis tabs) that judges interact with live — MAP, TRACE, EXEC, DELTA, and more.</p>
+                        </div>
+
+                        <!-- Hashim -->
+                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <span class="font-outfit text-lg font-bold text-white">Muhammad Hashim</span>
+                            <span class="text-xs font-mono text-purpleAccent font-medium">DB Engineer & iOS Developer
+                                (Age: 27)</span>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-1">PostgreSQL + pgvector schema, crisis persistence, and citizen Flutter app — production-grade data layer.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 2: The Problem & The AI Solution -->
+        <section class="slide-scene stretch-slide" id="slide-2">
+            <div class="flex flex-col w-full max-w-7xl h-full justify-between">
+
+                <div class="slide-header">
+                    <span class="slide-tagline">Slide 2 · Challenge 3: CIRO</span>
+                    <h2 class="slide-title">The Problem &amp; <span>Our AI Solution</span></h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-2 max-w-4xl leading-relaxed">
+                        <strong class="text-white">Challenge selected:</strong> Crisis Intelligence &amp; Response Orchestrator.
+                        When Karachi floods, citizens post in Roman Urdu on social media while PDMA debates severity and
+                        rescue teams dispatch blind. <span class="text-cyanAccent">CityBrain closes that gap in 84 seconds.</span>
+                    </p>
+                </div>
+
+                <!-- Split Interactive Drag Slider -->
+                <div class="relative w-full flex-grow rounded-2xl border border-slate-800 overflow-hidden my-4 bg-void/50 select-none shadow-2xl"
+                    id="comparison-container">
+
+                    <!-- BEFORE: Problem/Chaos (full layer, clipped left of handle) -->
+                    <div class="comparison-layer comparison-chaos" id="chaos-half">
+                        <div class="max-w-md flex flex-col gap-3">
+                            <div class="flex items-center gap-3 text-red-500 font-mono text-sm tracking-wider">
+                                <span>🚨 BEFORE — LEVEL: WATCH / UNCOORDINATED</span>
+                            </div>
+                            <h3 class="font-outfit text-2xl md:text-3xl font-bold text-white">What Cities Do Today
+                            </h3>
+                            <div class="flex flex-col gap-2.5 font-mono text-xs text-red-400/90 comparison-points">
+                                <div class="flex gap-2"><span class="text-red-500 font-bold">[!]</span> <span>Chatbots answer questions — they don't dispatch rescue teams</span></div>
+                                <div class="flex gap-2"><span class="text-red-500 font-bold">[!]</span>
+                                    <span>Dashboards show data — they don't fuse Urdu tweets + weather + traffic</span></div>
+                                <div class="flex gap-2"><span class="text-red-500 font-bold">[!]</span> <span>Humans manually coordinate reroute, rescue, and alerts separately</span></div>
+                                <div class="flex gap-2"><span class="text-red-500 font-bold">[!]</span> <span>No one measures if the response actually worked — no replan</span></div>
+                                <div class="flex gap-2"><span class="text-red-500 font-bold">[!]</span> <span>Monsoon kills. Minutes lost = lives lost.</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AFTER: AI Solution (full layer, clipped right of handle) -->
+                    <div class="comparison-layer comparison-clarity" id="solution-half">
+                        <div class="max-w-md flex flex-col gap-3 text-right ml-auto">
+                            <div
+                                class="flex items-center justify-end gap-3 text-cyanAccent font-mono text-sm tracking-wider">
+                                <span>⚡ AFTER — OPERATIONAL OS ACTIVE</span>
+                            </div>
+                            <h3 class="font-outfit text-2xl md:text-3xl font-bold text-white">What CityBrain Does
+                            </h3>
+                            <div class="flex flex-col gap-2.5 font-mono text-xs text-cyanAccent/90 comparison-points">
+                                <div class="flex gap-2 justify-end"><span>9 autonomous agents run the full CIRO pipeline — zero human-in-the-loop for demo</span> <span class="text-cyanAccent font-bold">[+]</span></div>
+                                <div class="flex gap-2 justify-end"><span>Parses Roman Urdu ("sadak swimming pool ban gayi") → geo-tagged flood alerts</span> <span class="text-cyanAccent font-bold">[+]</span></div>
+                                <div class="flex gap-2 justify-end"><span>Digital twin simulates flood spread, reroutes traffic, dispatches rescue</span> <span class="text-cyanAccent font-bold">[+]</span></div>
+                                <div class="flex gap-2 justify-end"><span>Reflection agent scores outcome — auto-triggers Plan v2 if mitigation fails</span> <span class="text-cyanAccent font-bold">[+]</span></div>
+                                <div class="flex gap-2 justify-end"><span>Every action audited: tool logs, reasoning traces, Antigravity export</span> <span class="text-cyanAccent font-bold">[+]</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Handle -->
+                    <div class="slider-handle" id="slider-handle" style="left: 50%;">
+                        <div class="slider-handle-dot">↔</div>
+                    </div>
+
+                    <!-- Labels -->
+                    <div
+                        class="absolute bottom-3 left-4 text-[10px] font-mono text-red-400/70 uppercase tracking-widest z-30 pointer-events-none">
+                        BEFORE</div>
+                    <div
+                        class="absolute bottom-3 right-4 text-[10px] font-mono text-cyanAccent/70 uppercase tracking-widest z-30 pointer-events-none">
+                        AFTER</div>
+                </div>
+
+                <!-- Stat Counter row -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full shrink-0">
+                    <div class="glass-panel p-4 rounded-xl text-center">
+                        <span class="text-3xl font-black text-white font-outfit" id="stat-signals">0</span>
+                        <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Signals Correlated</p>
+                        <p class="text-[9px] text-slate-600 mt-0.5">6 multilingual Clifton/Saddar posts</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl text-center">
+                        <span class="text-3xl font-black text-cyanAccent font-outfit" id="stat-urgency">0%</span>
+                        <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Crisis Confidence</p>
+                        <p class="text-[9px] text-slate-600 mt-0.5">CoT clustering score</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl text-center">
+                        <span class="text-3xl font-black text-dangerAccent font-outfit" id="stat-delay">0s</span>
+                        <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Pipeline Latency</p>
+                        <p class="text-[9px] text-slate-600 mt-0.5">Karachi flood demo E2E</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl text-center">
+                        <span class="text-3xl font-black text-white font-outfit" id="stat-reduction">0%</span>
+                        <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Congestion Cleared</p>
+                        <p class="text-[9px] text-slate-600 mt-0.5">Before/after DELTA tab</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 3: Technical Architecture & Live Demo -->
+        <section class="slide-scene stretch-slide" id="slide-3">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full max-w-7xl h-full min-h-0">
+
+                <!-- Architecture flow -->
+                <div class="lg:col-span-5 flex flex-col h-full min-h-0 py-2 border-0 lg:border-r border-slate-900 pr-0 lg:pr-6">
+                    <div class="shrink-0">
+                        <span class="slide-tagline">Slide 3 · Technical Architecture &amp; Live Demo</span>
+                        <h2 class="slide-title">Built, Deployed &amp; <span>Demo-Ready</span></h2>
+                        <p class="text-slate-400 text-xs font-light leading-relaxed mt-2 mb-3">
+                            Full-stack monorepo: Express API + WebSocket hub + 9-agent orchestrator + physics simulation twin +
+                            Expo mobile command center. <strong class="text-white">Judges can verify live now</strong> — tap RUN DEMO or open the app.
+                        </p>
+                    </div>
+
+                    <!-- Agent pipeline list -->
+                    <div class="glass-panel p-3 rounded-lg mb-3 shrink-0 border border-slate-800">
+                        <div class="grid grid-cols-3 gap-1.5 text-[9px] font-mono text-slate-500">
+                            <span class="text-cyanAccent">01 Signal Extraction</span>
+                            <span>02 Crisis Detection</span>
+                            <span>03 Severity Reasoning</span>
+                            <span>04 Planning</span>
+                            <span>05 Resource Allocation</span>
+                            <span>06 Traffic Rerouting</span>
+                            <span>07 Citizen Alert</span>
+                            <span>08 Execution</span>
+                            <span class="text-purpleAccent">09 Reflection → v2</span>
+                        </div>
+                    </div>
+
+                    <!-- Flow SVG -->
+                    <div class="flex-1 min-h-0 flex items-center justify-center py-1">
+                        <svg viewBox="0 0 400 300" class="w-full max-w-md h-auto" id="pipeline-svg">
+                            <path d="M 50,50 L 200,50 L 200,150 L 50,150 L 50,250 L 350,250" fill="none"
+                                stroke="rgba(255,255,255,0.05)" stroke-width="6" id="svg-flow-path-bg" />
+                            <path d="M 50,50 L 200,50 L 200,150 L 50,150 L 50,250 L 350,250" fill="none"
+                                stroke="#00FFC6" stroke-width="2" stroke-dasharray="8 4" id="svg-flow-path-active" />
+
+                            <g class="cursor-none"
+                                onclick="highlightNode('ingestion', 'Signal Extraction — Normalizes English, Urdu & Roman Urdu; extracts entities and geolocations.')"
+                                transform="translate(50, 50)">
+                                <circle r="16" fill="#0B131E" stroke="#00FFC6" stroke-width="2" class="node-circle"
+                                    id="circle-ingestion" />
+                                <text text-anchor="middle" y="4" font-family="Outfit" font-size="9" fill="#FFF"
+                                    font-weight="bold">01</text>
+                                <text text-anchor="middle" y="28" font-family="Fira Code" font-size="8"
+                                    fill="#94A3B8">Extract</text>
+                            </g>
+
+                            <g class="cursor-none"
+                                onclick="highlightNode('reason', 'Crisis Detection — 9-step CoT spatial clustering; declares crisis candidates with confidence.')"
+                                transform="translate(200, 50)">
+                                <circle r="16" fill="#0B131E" stroke="#1E2A38" stroke-width="2" class="node-circle"
+                                    id="circle-reason" />
+                                <text text-anchor="middle" y="4" font-family="Outfit" font-size="9" fill="#FFF"
+                                    font-weight="bold">02</text>
+                                <text text-anchor="middle" y="28" font-family="Fira Code" font-size="8"
+                                    fill="#94A3B8">Detect</text>
+                            </g>
+
+                            <g class="cursor-none"
+                                onclick="highlightNode('plan', 'Emergency Planning — Weighted decision matrix; phased immediate/containment/recovery actions from SOP vectors.')"
+                                transform="translate(200, 150)">
+                                <circle r="16" fill="#0B131E" stroke="#1E2A38" stroke-width="2" class="node-circle"
+                                    id="circle-plan" />
+                                <text text-anchor="middle" y="4" font-family="Outfit" font-size="9" fill="#FFF"
+                                    font-weight="bold">04</text>
+                                <text text-anchor="middle" y="28" font-family="Fira Code" font-size="8"
+                                    fill="#94A3B8">Plan</text>
+                            </g>
+
+                            <g class="cursor-none"
+                                onclick="highlightNode('simulate', 'Simulation Engine — Physics-based flood spread, traffic rerouting, rescue movement frames via WebSocket.')"
+                                transform="translate(50, 150)">
+                                <circle r="16" fill="#0B131E" stroke="#1E2A38" stroke-width="2" class="node-circle"
+                                    id="circle-simulate" />
+                                <text text-anchor="middle" y="4" font-family="Outfit" font-size="9" fill="#FFF"
+                                    font-weight="bold">Sim</text>
+                                <text text-anchor="middle" y="28" font-family="Fira Code" font-size="8"
+                                    fill="#94A3B8">Twin</text>
+                            </g>
+
+                            <g class="cursor-none"
+                                onclick="highlightNode('execute', 'Execution — Tool registry: updateTrafficRoutes, dispatchRescueTeams, sendEmergencyAlerts with audit logs.')"
+                                transform="translate(50, 250)">
+                                <circle r="16" fill="#0B131E" stroke="#1E2A38" stroke-width="2" class="node-circle"
+                                    id="circle-execute" />
+                                <text text-anchor="middle" y="4" font-family="Outfit" font-size="9" fill="#FFF"
+                                    font-weight="bold">08</text>
+                                <text text-anchor="middle" y="28" font-family="Fira Code" font-size="8"
+                                    fill="#94A3B8">Execute</text>
+                            </g>
+
+                            <g class="cursor-none"
+                                onclick="highlightNode('reflect', 'Reflection & Replan — Scores congestion/stranded reduction; triggers Plan v2 if improvement &lt; 25%.')"
+                                transform="translate(350, 250)">
+                                <circle r="16" fill="#0B131E" stroke="#1E2A38" stroke-width="2" class="node-circle"
+                                    id="circle-reflect" />
+                                <text text-anchor="middle" y="4" font-family="Outfit" font-size="9" fill="#FFF"
+                                    font-weight="bold">09</text>
+                                <text text-anchor="middle" y="28" font-family="Fira Code" font-size="8"
+                                    fill="#94A3B8">Reflect</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="glass-panel p-3 rounded-lg text-slate-400 text-xs font-mono border border-slate-800 shrink-0"
+                        id="flow-description">
+                        [System Setup]: Active. Click on a node sequence to audit agent functions.
+                    </div>
+                </div>
+
+                <!-- Right Live Demo Telemetry Simulator -->
+                <div class="lg:col-span-7 flex flex-col gap-3 h-full min-h-0 py-2">
+                    <div
+                        class="glass-panel console-panel rounded-xl flex flex-col overflow-hidden bg-black/45 border border-slate-800 relative">
+                        <div
+                            class="bg-panel border-b border-slate-800/80 px-4 py-2.5 flex justify-between items-center shrink-0">
+                            <div class="flex gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                            </div>
+                            <span
+                                class="text-xs font-mono text-slate-500 tracking-wider">citybrain-orchestrator-console</span>
+                            <button id="run-demo-btn" onclick="startConsoleDemo()"
+                                class="bg-cyanAccent hover:shadow-glow text-void text-[10px] sm:text-xs font-mono font-bold px-2 sm:px-3 py-1 rounded transition-all whitespace-nowrap">▶
+                                RUN DEMO</button>
+                        </div>
+
+                        <div class="console-body p-4 font-mono text-xs text-sky-400 flex flex-col gap-1" id="console-output">
+                            <div class="text-slate-500">> RUN DEMO — Karachi flood scenario · 9 agents · live storm · matches production API trace...</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0">
+                        <a href="https://citybrain.tawha.com" target="_blank" class="glass-panel p-2.5 rounded-lg border border-cyanAccent/30 hover:border-cyanAccent transition-colors">
+                            <span class="text-[9px] font-mono text-cyanAccent uppercase block">Mobile App ↗</span>
+                            <span class="font-outfit text-xs font-bold text-white">Command Center</span>
+                        </a>
+                        <div class="glass-panel p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-[9px] font-mono text-slate-500 uppercase block">Tech Stack</span>
+                            <span class="font-outfit text-xs font-bold text-white">Node · Expo · PG</span>
+                        </div>
+                        <div class="glass-panel p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-[9px] font-mono text-slate-500 uppercase block">AI Layer</span>
+                            <span class="font-outfit text-xs font-bold text-purpleAccent">Gemini + Antigravity</span>
+                        </div>
+                        <div class="glass-panel p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-[9px] font-mono text-slate-500 uppercase block">Judge Assets</span>
+                            <span class="font-outfit text-xs font-bold text-white">GitHub · Traces · README</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 4: Market Opportunity & Target Audience -->
+        <section class="slide-scene stretch-slide" id="slide-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start lg:items-center w-full max-w-7xl h-full min-h-0 overflow-y-auto lg:overflow-visible">
+
+                <!-- Left Market figures -->
+                <div class="lg:col-span-5 flex flex-col justify-center h-full pr-0 lg:pr-6 border-0 lg:border-r border-slate-900 market-metrics">
+                    <span class="slide-tagline">Slide 4 · Business Angle</span>
+                    <h2 class="slide-title">Market Opportunity &amp; <span>Target Audience</span></h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-2 mb-4 leading-relaxed">
+                        <strong class="text-white">Why now?</strong> South Asia's monsoon season floods displace millions annually.
+                        Smart city spend is accelerating, but no product fuses multilingual citizen signals with autonomous
+                        emergency orchestration. CityBrain fills that gap.
+                    </p>
+
+                    <div class="flex flex-col gap-3 mt-1">
+                        <!-- TAM -->
+                        <div
+                            class="glass-panel p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-cyanAccent/50 transition-colors">
+                            <div>
+                                <span class="text-xs font-mono text-slate-500 block">TOTAL ADDRESSABLE MARKET
+                                    (TAM)</span>
+                                <span class="font-outfit text-2xl font-black text-white">$320B</span>
+                            </div>
+                            <span class="text-xs font-mono bg-cyanAccent/10 text-cyanAccent px-2 py-1 rounded">Smart
+                                Cities</span>
+                        </div>
+
+                        <!-- SAM -->
+                        <div
+                            class="glass-panel p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-purpleAccent/50 transition-colors">
+                            <div>
+                                <span class="text-xs font-mono text-slate-500 block">SERVICEABLE ADDRESSABLE MARKET
+                                    (SAM)</span>
+                                <span class="font-outfit text-2xl font-black text-white">$45B</span>
+                            </div>
+                            <span
+                                class="text-xs font-mono bg-purpleAccent/10 text-purpleAccent px-2 py-1 rounded">Emergency
+                                Ops</span>
+                        </div>
+
+                        <!-- SOM -->
+                        <div
+                            class="glass-panel p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-white transition-colors">
+                            <div>
+                                <span class="text-xs font-mono text-slate-500 block">SERVICEABLE OBTAINABLE MARKET
+                                    (SOM)</span>
+                                <span class="font-outfit text-2xl font-black text-white">$8.4B</span>
+                            </div>
+                            <span class="text-xs font-mono bg-white/10 text-white px-2 py-1 rounded">AI Disaster
+                                Tech</span>
+                        </div>
+
+                        <div class="glass-panel p-3 rounded-xl border border-slate-800">
+                            <span class="text-[10px] font-mono text-warnAccent uppercase tracking-wider">Revenue Model</span>
+                            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">SaaS per metro · Crisis-seat licensing for PDMA/NDMA · API usage for NGO integrations · Premium simulation &amp; memory modules.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Target Audience cards -->
+                <div class="lg:col-span-7 flex flex-col gap-3">
+                    <h3 class="font-outfit text-lg sm:text-xl font-bold text-white mb-1">User Personas — Who Pays, Who Benefits</h3>
+
+                    <!-- Govt Card -->
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex gap-4 items-center">
+                        <div
+                            class="w-12 h-12 bg-cyanAccent/10 rounded-lg flex items-center justify-center font-bold text-cyanAccent text-xl">
+                            🏛️</div>
+                        <div>
+                            <h4 class="font-outfit text-base font-bold text-white">Persona 1 — Disaster Management Authority</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-1"><strong class="text-slate-300">PDMA / NDMA / KMC:</strong> Needs one command screen to see crisis confidence, allocate pumps &amp; ambulances, and prove response outcomes to government — not spreadsheets.</p>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Services -->
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex gap-4 items-center">
+                        <div
+                            class="w-12 h-12 bg-purpleAccent/10 rounded-lg flex items-center justify-center font-bold text-purpleAccent text-xl">
+                            ⛑️</div>
+                        <div>
+                            <h4 class="font-outfit text-base font-bold text-white">Persona 2 — Emergency Dispatcher</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-1"><strong class="text-slate-300">1122 / Edhi / Red Crescent:</strong> Needs live routes, ETAs, and geotagged citizen coordinates — not phone chains during a flood.</p>
+                        </div>
+                    </div>
+
+                    <!-- Smart Citizens -->
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex gap-4 items-center">
+                        <div
+                            class="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center font-bold text-amber-500 text-xl">
+                            📱</div>
+                        <div>
+                            <h4 class="font-outfit text-base font-bold text-white">Persona 3 — Citizen in Crisis</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-1"><strong class="text-slate-300">Flood-zone resident:</strong> Reports in Urdu via Flutter app, receives detour maps &amp; safety alerts — "Saddar Underpass bilkul band hai" before they drive into water.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 5: Why CityBrain Wins — Innovation & Differentiation -->
+        <section class="slide-scene stretch-slide overflow-y-auto lg:overflow-hidden" id="slide-5">
+            <div class="flex flex-col w-full max-w-7xl h-full gap-4 py-1 min-h-0">
+
+                <div class="slide-header shrink-0">
+                    <span class="slide-tagline">Slide 5 · Why We Win</span>
+                    <h2 class="slide-title">Not a Chatbot. Not a Dashboard. <span>An Operating System.</span></h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-2 max-w-4xl leading-relaxed">
+                        Most hackathon submissions stop at a prototype. CityBrain is <strong class="text-white">production-deployed</strong>,
+                        <strong class="text-white">Antigravity-native</strong>, and the <strong class="text-cyanAccent">only CIRO solution with a closed-loop replan</strong>.
+                    </p>
+                </div>
+
+                <!-- Competitor comparison table -->
+                <div class="glass-panel rounded-xl border border-slate-800 overflow-hidden shrink-0">
+                    <div class="grid grid-cols-4 gap-0 text-[10px] sm:text-xs font-mono border-b border-slate-800 bg-panel/80">
+                        <div class="p-2 sm:p-3 text-slate-500">Capability</div>
+                        <div class="p-2 sm:p-3 text-red-400/80 text-center">Typical Chatbot</div>
+                        <div class="p-2 sm:p-3 text-yellow-500/80 text-center">Static Dashboard</div>
+                        <div class="p-2 sm:p-3 text-cyanAccent text-center font-bold">CityBrain AI</div>
+                    </div>
+                    <div class="divide-y divide-slate-800/80 text-[10px] sm:text-xs">
+                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Multilingual crisis fusion</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Partial</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Roman Urdu + EN</div></div>
+                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Autonomous agent pipeline</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">✗</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ 9 agents</div></div>
+                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Dispatch &amp; reroute execution</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Manual</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Tool registry</div></div>
+                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Physics simulation twin</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Static map</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Live WS overlays</div></div>
+                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Adaptive replan loop</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">✗</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Plan v2 auto</div></div>
+                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Production deploy + mobile app</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Sometimes</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Live + APK</div></div>
+                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Antigravity trace export</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">✗</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ CIRO schema</div></div>
+                    </div>
+                </div>
+
+                <!-- CIRO rubric + proof points -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
+                    <div class="glass-panel p-4 rounded-xl border border-cyanAccent/20">
+                        <span class="text-[10px] font-mono text-cyanAccent uppercase tracking-wider">CIRO Rubric — 100% Coverage</span>
+                        <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-[10px] sm:text-xs font-mono">
+                            <span class="text-slate-400">Antigravity Execution <span class="text-white font-bold">25%</span></span>
+                            <span class="text-slate-400">Agentic Reasoning <span class="text-white font-bold">20%</span></span>
+                            <span class="text-slate-400">Situation Detection <span class="text-white font-bold">20%</span></span>
+                            <span class="text-slate-400">Planning &amp; Simulation <span class="text-white font-bold">15%</span></span>
+                            <span class="text-slate-400">Technical Implementation <span class="text-white font-bold">10%</span></span>
+                            <span class="text-slate-400">Innovation &amp; UX <span class="text-white font-bold">10%</span></span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-2">Every criterion mapped to code, docs, and exportable Antigravity traces.</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl border border-purpleAccent/20 flex flex-col gap-2">
+                        <span class="text-[10px] font-mono text-purpleAccent uppercase tracking-wider">Proof We Ship — Not Slides</span>
+                        <div class="grid grid-cols-2 gap-2 text-[10px] sm:text-xs font-mono mt-1">
+                            <span class="text-green-400">✓ citybrain.tawha.com live</span>
+                            <span class="text-green-400">✓ API + WebSocket prod</span>
+                            <span class="text-green-400">✓ Expo 7-tab mobile UI</span>
+                            <span class="text-green-400">✓ Docker one-command deploy</span>
+                            <span class="text-green-400">✓ Karachi flood demo E2E</span>
+                            <span class="text-green-400">✓ Gemini + SOP fallback</span>
+                            <span class="text-green-400">✓ pgvector crisis memory</span>
+                            <span class="text-green-400">✓ GitHub + README + traces</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 6: Future Roadmap & Next Steps -->
+        <section class="slide-scene stretch-slide" id="slide-6">
+            <div class="flex flex-col w-full max-w-7xl h-full justify-between py-2 min-h-0">
+
+                <div class="slide-header shrink-0">
+                    <span class="slide-tagline">Slide 6 · Future Roadmap</span>
+                    <h2 class="slide-title">Next 6–12 Months &amp; <span>Scale Vision</span></h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-2">From regional hackathon winner to multi-city emergency OS — Karachi first, then Lahore, Islamabad, and South Asian metros.</p>
+                </div>
+
+                <!-- Timeline path -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 my-4 relative flex-1 min-h-0 items-start" id="roadmap-timeline">
+                    <div class="roadmap-connector hidden md:block"></div>
+
+                    <!-- Milestone 1 -->
+                    <div class="glass-panel p-5 rounded-xl flex flex-col items-center text-center roadmap-milestone">
+                        <div
+                            class="roadmap-node w-12 h-12 rounded-full bg-void border-4 border-cyanAccent shadow-[0_0_10px_#00FFC6] flex items-center justify-center font-mono text-xs font-bold text-cyanAccent mb-3">
+                            01</div>
+                        <span class="text-[10px] font-mono text-cyanAccent uppercase font-bold tracking-wider">Months
+                            1–3</span>
+                        <h4 class="font-outfit text-lg font-bold text-white mt-1">Vector Memory &amp; Citizen Apps</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mt-2">Deploy Flutter citizen report app;
+                            activate pgvector semantic memory to correlate SOPs with historic flood bypass locations.
+                            Expand Expo command center with RBAC roles.</p>
+                        <ul class="text-[10px] font-mono text-slate-500 mt-2 space-y-0.5 text-left w-full">
+                            <li>→ Citizen Flutter app production release</li>
+                            <li>→ pgvector crisis memory recall</li>
+                        </ul>
+                    </div>
+
+                    <!-- Milestone 2 -->
+                    <div class="glass-panel p-5 rounded-xl flex flex-col items-center text-center roadmap-milestone">
+                        <div
+                            class="roadmap-node w-12 h-12 rounded-full bg-void border-4 border-purpleAccent shadow-[0_0_10px_#8B5CF6] flex items-center justify-center font-mono text-xs font-bold text-purpleAccent mb-3">
+                            02</div>
+                        <span class="text-[10px] font-mono text-purpleAccent uppercase font-bold tracking-wider">Months
+                            4–6</span>
+                        <h4 class="font-outfit text-lg font-bold text-white mt-1">Google Routes &amp; Alert Gateways</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mt-2">Integrate live Google Routes API v2 for
+                            traffic speeds; Twilio SMS/push broadcasting; CAD/911 adapter prototypes for real dispatch.
+                        </p>
+                        <ul class="text-[10px] font-mono text-slate-500 mt-2 space-y-0.5 text-left w-full">
+                            <li>→ Live Google Routes integration</li>
+                            <li>→ Twilio multilingual SMS alerts</li>
+                        </ul>
+                    </div>
+
+                    <!-- Milestone 3 -->
+                    <div class="glass-panel p-5 rounded-xl flex flex-col items-center text-center roadmap-milestone">
+                        <div
+                            class="roadmap-node w-12 h-12 rounded-full bg-void border-4 border-slate-600 shadow-[0_0_10px_rgba(100,116,139,0.4)] flex items-center justify-center font-mono text-xs font-bold text-slate-400 mb-3">
+                            03</div>
+                        <span class="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-wider">Months
+                            7–12</span>
+                        <h4 class="font-outfit text-lg font-bold text-white mt-1">Multi-City Cluster Scaling</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mt-2">Scale to 5 South Asian metros with
+                            tenant isolation, scenario registry per metro, Redis Streams event bus, and OpenTelemetry
+                            traces aligned with agent_runs IDs.</p>
+                        <ul class="text-[10px] font-mono text-slate-500 mt-2 space-y-0.5 text-left w-full">
+                            <li>→ Horizontal orchestrator microservices</li>
+                            <li>→ Enterprise v2 schema (Prisma-ready)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Final closing sequence card -->
+                <div class="glass-panel p-4 rounded-xl border border-slate-800/80 bg-gradient-to-r from-panel via-void to-panel text-center flex flex-col items-center gap-2 relative overflow-hidden shrink-0"
+                    id="final-close-box">
+                    <h3 class="font-outfit text-lg sm:text-xl md:text-2xl font-black text-white tracking-wide">"The city posts chaos. CityBrain posts coordinates."</h3>
+                    <p class="text-xs font-mono text-cyanAccent tracking-widest uppercase">Ready for Q&amp;A · GitHub · README · Antigravity Traces · Live Demo</p>
+                    <p class="text-[10px] font-mono text-slate-500">Ask us anything — we built every layer and can show it live.</p>
+                    <button onclick="triggerClosingSequence()"
+                        class="bg-cyanAccent hover:shadow-glow text-void text-xs font-mono font-bold px-4 py-1.5 rounded-full mt-1 transition-transform hover:scale-105">End Pitch 🚀</button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Slide Navigation Footer controls -->
+    <footer class="presentation-footer absolute bottom-0 left-0 w-full px-3 sm:px-6 md:px-8 lg:px-12 py-3 flex justify-between items-center gap-2 z-50">
+        <div class="keyboard-tip text-slate-500 font-mono text-xs hidden lg:flex items-center gap-1.5 shrink-0">
+            <span>Present:</span>
+            <span class="keyboard-key">←</span>
+            <span class="keyboard-key">→</span>
+            <span>or</span>
+            <span class="keyboard-key">Space</span>
+        </div>
+
+        <!-- Dot indicators -->
+        <div class="flex gap-2.5" id="slide-indicators">
+            <div class="w-2 h-2 rounded-full bg-cyanAccent shadow-[0_0_8px_#00FFC6] cursor-none transition-all duration-300"
+                onclick="jumpToSlide(1)" id="indicator-1"></div>
+            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
+                onclick="jumpToSlide(2)" id="indicator-2"></div>
+            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
+                onclick="jumpToSlide(3)" id="indicator-3"></div>
+            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
+                onclick="jumpToSlide(4)" id="indicator-4"></div>
+            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
+                onclick="jumpToSlide(5)" id="indicator-5"></div>
+            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
+                onclick="jumpToSlide(6)" id="indicator-6"></div>
+        </div>
+
+        <div class="flex gap-2 sm:gap-3 shrink-0">
+            <button onclick="navigateSlide(-1)"
+                class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-slate-400 hover:text-cyanAccent">PREV</button>
+            <button onclick="navigateSlide(1)"
+                class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-cyanAccent hover:bg-cyanAccent/5 hover:text-white font-semibold">NEXT</button>
+        </div>
+    </footer>
+
+    <!-- Fullscreen Finale Overlay -->
+    <div id="finale-overlay"
+        class="fixed inset-0 bg-void z-[9999] opacity-0 pointer-events-none flex flex-col items-center justify-center transition-opacity duration-1000">
+        <div class="text-center flex flex-col items-center gap-6 p-8">
+            <div
+                class="w-20 h-20 rounded-full border-4 border-cyanAccent flex items-center justify-center font-outfit text-5xl font-black text-cyanAccent animate-pulse shadow-[0_0_30px_#00FFC6]">
+                C</div>
+            <h1 class="font-outfit text-5xl md:text-7xl font-black tracking-tight text-white leading-none">
+                CITYBRAIN <span class="text-cyanAccent animate-pulse">AI</span>
+            </h1>
+            <p
+                class="font-mono text-cyanAccent tracking-widest text-sm uppercase md:text-base border-t border-b border-cyanAccent/20 py-2.5 px-6 mt-2">
+                "The city posts chaos. CityBrain posts coordinates."
+            </p>
+            <span class="text-xs font-mono text-slate-500 mt-4 tracking-widest">6 SLIDES · 6 MIN PITCH · 4 MIN Q&amp;A — PRESS ANY KEY TO RESTART</span>
+        </div>
+    </div>
+
+    <!-- MAIN SCRIPT (THREE.JS, GSAP, WEB AUDIO SYNTH, INTERACTION) -->
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 6;
+        let isConsoleRunning = false;
+        let audioCtx = null;
+        let masterSynthGain = null;
+        let rainIntensity = 'none';
+        let stormNodes = null;
+        let rainAnimFrame = null;
+        let rainDrops = [];
+        let visualRainActive = false;
+        let monsoonAutoStopTimer = null;
+        const MONSOON_AUTO_STOP_MS = 5000;
+
+        // Custom Cursor movement
+        const cursor = document.getElementById('custom-cursor');
+        const cursorGlow = document.getElementById('custom-cursor-glow');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.transform = `translate3d(${e.clientX - 4}px, ${e.clientY - 4}px, 0)`;
+            cursorGlow.style.transform = `translate3d(${e.clientX - 20}px, ${e.clientY - 20}px, 0)`;
+
+            // Mouse coords telemetry update
+            if (Math.random() < 0.1) {
+                const lat = (24.86 + (e.clientY / window.innerHeight) * 0.02).toFixed(4);
+                const lon = (67.00 + (e.clientX / window.innerWidth) * 0.02).toFixed(4);
+                document.getElementById('telemetry-coords').innerText = `SYS.COORD: ${lat}° N, ${lon}° E`;
+            }
+        });
+
+        // Procedural Audio Web Audio Synth
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterSynthGain = audioCtx.createGain();
+                masterSynthGain.gain.setValueAtTime(0.0, audioCtx.currentTime); // start silent
+                masterSynthGain.connect(audioCtx.destination);
+            } catch (err) {
+                console.warn("AudioContext block", err);
+            }
+        }
+
+        function toggleAmbientSynth() {
+            initAudio();
+            if (!audioCtx) return;
+
+            const btn = document.getElementById('sound-btn');
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (masterSynthGain.gain.value > 0 || stormNodes || visualRainActive) {
+                masterSynthGain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.3);
+                stopMonsoonRainfall();
+                btn.innerHTML = '<span id="sound-icon">🔈</span> SOUND OFF';
+                btn.classList.remove('text-cyanAccent');
+            } else {
+                masterSynthGain.gain.setTargetAtTime(0.12, audioCtx.currentTime, 0.3);
+                btn.innerHTML = '<span id="sound-icon">🔊</span> SOUND ON';
+                btn.classList.add('text-cyanAccent');
+                playAmbientSynthPad();
+                playBeep(440, 0.05, 0.02, true);
+            }
+        }
+
+        // Procedural click beep sound (works even when ambient is off, for UI feedback)
+        function playBeep(frequency = 600, duration = 0.08, volume = 0.03, force = false) {
+            if (!audioCtx) return;
+            if (!force && masterSynthGain && masterSynthGain.gain.value === 0) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (err) {
+                // fail silently
+            }
+        }
+
+        // Procedural monsoon storm: heavy rain + wind gusts
+        function createNoiseBuffer(type = 'white', seconds = 2) {
+            const bufferSize = audioCtx.sampleRate * seconds;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            let last = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                if (type === 'brown') {
+                    last = (last + 0.02 * white) / 1.02;
+                    data[i] = last * 3.5;
+                } else {
+                    data[i] = white;
+                }
+            }
+            return buffer;
+        }
+
+        function startStormAudio() {
+            initAudio();
+            if (!audioCtx) return Promise.resolve();
+
+            const begin = () => {
+                stopStormAudio();
+
+                const stormGain = audioCtx.createGain();
+                stormGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+                stormGain.gain.exponentialRampToValueAtTime(0.65, audioCtx.currentTime + 0.8);
+                stormGain.connect(audioCtx.destination);
+
+            // Rain — band-passed white noise
+            const rainSource = audioCtx.createBufferSource();
+            rainSource.buffer = createNoiseBuffer('white', 3);
+            rainSource.loop = true;
+            const rainFilter = audioCtx.createBiquadFilter();
+            rainFilter.type = 'bandpass';
+            rainFilter.frequency.value = 3200;
+            rainFilter.Q.value = 0.4;
+            const rainGain = audioCtx.createGain();
+            rainGain.gain.value = 0.35;
+            rainSource.connect(rainFilter);
+            rainFilter.connect(rainGain);
+            rainGain.connect(stormGain);
+
+            // Heavy rain layer — high frequency hiss
+            const rainHiss = audioCtx.createBufferSource();
+            rainHiss.buffer = createNoiseBuffer('white', 2);
+            rainHiss.loop = true;
+            const hissFilter = audioCtx.createBiquadFilter();
+            hissFilter.type = 'highpass';
+            hissFilter.frequency.value = 6000;
+            const hissGain = audioCtx.createGain();
+            hissGain.gain.value = 0.12;
+            rainHiss.connect(hissFilter);
+            hissFilter.connect(hissGain);
+            hissGain.connect(stormGain);
+
+            // Wind — brown noise through lowpass with LFO modulation
+            const windSource = audioCtx.createBufferSource();
+            windSource.buffer = createNoiseBuffer('brown', 4);
+            windSource.loop = true;
+            const windFilter = audioCtx.createBiquadFilter();
+            windFilter.type = 'lowpass';
+            windFilter.frequency.value = 280;
+            const windGain = audioCtx.createGain();
+            windGain.gain.value = 0.45;
+
+            const windLfo = audioCtx.createOscillator();
+            windLfo.type = 'sine';
+            windLfo.frequency.value = 0.18;
+            const windLfoGain = audioCtx.createGain();
+            windLfoGain.gain.value = 180;
+            windLfo.connect(windLfoGain);
+            windLfoGain.connect(windFilter.frequency);
+
+            windSource.connect(windFilter);
+            windFilter.connect(windGain);
+            windGain.connect(stormGain);
+
+            // Distant thunder rumble (low osc)
+            const thunderOsc = audioCtx.createOscillator();
+            thunderOsc.type = 'sawtooth';
+            thunderOsc.frequency.value = 42;
+            const thunderFilter = audioCtx.createBiquadFilter();
+            thunderFilter.type = 'lowpass';
+            thunderFilter.frequency.value = 90;
+            const thunderGain = audioCtx.createGain();
+            thunderGain.gain.value = 0.08;
+            thunderOsc.connect(thunderFilter);
+            thunderFilter.connect(thunderGain);
+            thunderGain.connect(stormGain);
+
+            rainSource.start();
+            rainHiss.start();
+            windSource.start();
+            windLfo.start();
+            thunderOsc.start();
+
+            stormNodes = { stormGain, rainSource, rainHiss, windSource, windLfo, thunderOsc };
+
+            const btn = document.getElementById('sound-btn');
+            btn.innerHTML = '<span id="sound-icon">🌧️</span> <span class="hidden sm:inline">STORM ON</span>';
+            btn.classList.add('text-cyanAccent');
+            if (masterSynthGain) {
+                masterSynthGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+            }
+            };
+
+            if (audioCtx.state === 'suspended') {
+                return audioCtx.resume().then(begin).catch(begin);
+            }
+            begin();
+            return Promise.resolve();
+        }
+
+        function stopStormAudio() {
+            if (!stormNodes) return;
+            const t = audioCtx ? audioCtx.currentTime : 0;
+            try {
+                stormNodes.stormGain.gain.setTargetAtTime(0.001, t, 0.4);
+                setTimeout(() => {
+                    ['rainSource', 'rainHiss', 'windSource', 'windLfo', 'thunderOsc'].forEach(key => {
+                        try { stormNodes[key].stop(); } catch (e) { }
+                    });
+                    stormNodes = null;
+                }, 500);
+            } catch (e) {
+                stormNodes = null;
+            }
+        }
+
+        // Visual rainfall particle system
+        function initRainCanvas() {
+            const canvas = document.getElementById('rain-canvas');
+            if (!canvas) return;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.floor(window.innerWidth * dpr);
+            canvas.height = Math.floor(window.innerHeight * dpr);
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            rainDrops = [];
+            const density = window.innerWidth < 768 ? 12000 : 9000;
+            const count = Math.floor((window.innerWidth * window.innerHeight) / density);
+            for (let i = 0; i < count; i++) {
+                rainDrops.push(createRainDrop(canvas, true));
+            }
+        }
+
+        function createRainDrop(canvas, randomY = false) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            return {
+                x: Math.random() * w,
+                y: randomY ? Math.random() * h : -20 - Math.random() * h,
+                len: 10 + Math.random() * (window.innerWidth < 768 ? 16 : 22),
+                speed: 12 + Math.random() * (window.innerWidth < 768 ? 14 : 18),
+                opacity: 0.15 + Math.random() * 0.45,
+                width: 0.5 + Math.random() * 1.2
+            };
+        }
+
+        function drawVisualRain() {
+            const canvas = document.getElementById('rain-canvas');
+            if (!canvas || !visualRainActive) return;
+            const ctx = canvas.getContext('2d');
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            for (const drop of rainDrops) {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(174, 214, 255, ${drop.opacity})`;
+                ctx.lineWidth = drop.width;
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x - 2, drop.y + drop.len);
+                ctx.stroke();
+
+                drop.y += drop.speed;
+                drop.x -= 1.2;
+
+                if (drop.y > h + drop.len) {
+                    Object.assign(drop, createRainDrop(canvas));
+                    drop.y = -drop.len;
+                }
+            }
+
+            rainAnimFrame = requestAnimationFrame(drawVisualRain);
+        }
+
+        function startVisualRain() {
+            initRainCanvas();
+            visualRainActive = true;
+            document.getElementById('rain-canvas').classList.add('active');
+            document.body.classList.add('monsoon-active');
+            if (rainAnimFrame) cancelAnimationFrame(rainAnimFrame);
+            drawVisualRain();
+        }
+
+        function stopVisualRain() {
+            visualRainActive = false;
+            if (rainAnimFrame) {
+                cancelAnimationFrame(rainAnimFrame);
+                rainAnimFrame = null;
+            }
+            const canvas = document.getElementById('rain-canvas');
+            if (canvas) {
+                canvas.classList.remove('active');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            document.body.classList.remove('monsoon-active');
+        }
+
+        function clearMonsoonAutoStop() {
+            if (monsoonAutoStopTimer) {
+                clearTimeout(monsoonAutoStopTimer);
+                monsoonAutoStopTimer = null;
+            }
+        }
+
+        function scheduleMonsoonAutoStop() {
+            clearMonsoonAutoStop();
+            monsoonAutoStopTimer = setTimeout(() => {
+                monsoonAutoStopTimer = null;
+                stopMonsoonRainfall(true);
+            }, MONSOON_AUTO_STOP_MS);
+        }
+
+        function startMonsoonRainfall() {
+            changeRainIntensity('heavy');
+            startVisualRain();
+            startStormAudio();
+            scheduleMonsoonAutoStop();
+            return Promise.resolve();
+        }
+
+        function stopMonsoonRainfall(fromAutoStop = false) {
+            clearMonsoonAutoStop();
+            stopVisualRain();
+            stopStormAudio();
+
+            const btn = document.getElementById('sound-btn');
+            if (btn && !masterSynthGain?.gain?.value) {
+                btn.innerHTML = '<span id="sound-icon">🔈</span> <span class="hidden sm:inline">SOUND OFF</span>';
+                btn.classList.remove('text-cyanAccent');
+            }
+
+            if (!isConsoleRunning || fromAutoStop) {
+                if (currentSlide === 3) {
+                    changeRainIntensity('none');
+                } else {
+                    autoAdjustRainForSlide(currentSlide);
+                }
+            }
+        }
+
+        // Procedural Slide change synth sweep
+        function playSlideSweep() {
+            if (!audioCtx || masterSynthGain.gain.value === 0) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.5);
+
+                gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } catch (err) { }
+        }
+
+        // Procedural low ambient sound wave synth
+        let ambientOsc = null;
+        function playAmbientSynthPad() {
+            if (!audioCtx || ambientOsc) return;
+            try {
+                ambientOsc = audioCtx.createOscillator();
+                const filter = audioCtx.createBiquadFilter();
+
+                ambientOsc.type = 'sawtooth';
+                ambientOsc.frequency.setValueAtTime(55, audioCtx.currentTime); // Low A note
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(120, audioCtx.currentTime);
+
+                ambientOsc.connect(filter);
+                filter.connect(masterSynthGain);
+
+                ambientOsc.start();
+            } catch (err) { }
+        }
+
+
+        // Slide Navigation Engine
+        function showSlide(index) {
+            if (index < 1 || index > totalSlides) return;
+
+            const prevIndex = currentSlide;
+            currentSlide = index;
+
+            playSlideSweep();
+
+            // Slide content transition
+            const currentActive = document.querySelector('.slide-scene.active');
+            if (currentActive) {
+                currentActive.classList.remove('active');
+                currentActive.classList.add('exit');
+                setTimeout(() => {
+                    currentActive.classList.remove('exit');
+                }, 1000);
+            }
+
+            const targetSlide = document.getElementById(`slide-${index}`);
+            targetSlide.classList.add('active');
+
+            // Counter update
+            document.getElementById('slide-num').innerText = `0${index} / 0${totalSlides}`;
+
+            // Indicator dots update
+            for (let i = 1; i <= totalSlides; i++) {
+                const indicator = document.getElementById(`indicator-${i}`);
+                if (i === index) {
+                    indicator.className = "w-6 h-2 rounded-full bg-cyanAccent shadow-[0_0_8px_#00FFC6] cursor-none transition-all duration-300";
+                } else {
+                    indicator.className = "w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300";
+                }
+            }
+
+            // Adjust rain background simulation based on slide context
+            autoAdjustRainForSlide(index);
+
+            // Trigger slide animations using GSAP
+            triggerSlideGSAPAnimations(index);
+        }
+
+        function navigateSlide(direction) {
+            let nextIndex = currentSlide + direction;
+            if (nextIndex > totalSlides) {
+                nextIndex = 1;
+            } else if (nextIndex < 1) {
+                nextIndex = totalSlides;
+            }
+            showSlide(nextIndex);
+        }
+
+        function jumpToSlide(index) {
+            showSlide(index);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                // If finale overlay is open, restart presentation
+                const finale = document.getElementById('finale-overlay');
+                if (finale.classList.contains('opacity-100')) {
+                    finale.className = "fixed inset-0 bg-void z-[9999] opacity-0 pointer-events-none flex flex-col items-center justify-center transition-opacity duration-1000";
+                    showSlide(1);
+                } else {
+                    navigateSlide(1);
+                }
+            } else if (e.key === 'ArrowLeft') {
+                navigateSlide(-1);
+            }
+        });
+
+
+        // GSAP Slide Animations
+        function triggerSlideGSAPAnimations(slideIndex) {
+            if (slideIndex === 1) {
+                gsap.fromTo('#slide-1-title', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1.2, ease: "power4.out" });
+                gsap.fromTo('#slide-1-subtitle', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 1, delay: 0.2 });
+                gsap.fromTo('.team-grid .glass-panel', { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.1, duration: 0.8, ease: "power2.out", delay: 0.3 });
+            }
+            else if (slideIndex === 2) {
+                // Reset slide stats
+                animateStatCounters();
+            }
+            else if (slideIndex === 3) {
+                // Reset pipeline active state SVG line
+                const activePath = document.getElementById('svg-flow-path-active');
+                activePath.style.strokeDashoffset = "100";
+                gsap.to(activePath, { strokeDashoffset: 0, duration: 3, repeat: -1, ease: "linear" });
+
+                gsap.fromTo('#pipeline-svg g', { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, stagger: 0.1, duration: 0.6, ease: "back.out(1.7)" });
+            }
+            else if (slideIndex === 4) {
+                gsap.fromTo('.market-metrics .glass-panel', { opacity: 0, x: -30 }, { opacity: 1, x: 0, stagger: 0.15, duration: 0.8, ease: "power3.out" });
+                gsap.fromTo('.lg\\:col-span-7 .glass-panel', { opacity: 0, x: 30 }, { opacity: 1, x: 0, stagger: 0.15, duration: 0.8, ease: "power3.out" });
+            }
+            else if (slideIndex === 5) {
+                gsap.fromTo('#slide-5 .glass-panel', { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.08, duration: 0.7, ease: "power3.out" });
+            }
+            else if (slideIndex === 6) {
+                gsap.fromTo('#roadmap-timeline .glass-panel', { opacity: 0, y: 50 }, { opacity: 1, y: 0, stagger: 0.2, duration: 1, ease: "power3.out" });
+                gsap.fromTo('#final-close-box', { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.8, delay: 0.6 });
+            }
+        }
+
+        // Animate Slide 2 metrics numbers climbing
+        function animateStatCounters() {
+            const targets = [
+                { id: 'stat-signals', end: 6 },
+                { id: 'stat-urgency', end: 91, suffix: '%' },
+                { id: 'stat-delay', end: 84, suffix: 's' },
+                { id: 'stat-reduction', end: 68, suffix: '%' }
+            ];
+
+            targets.forEach(t => {
+                const element = document.getElementById(t.id);
+                let obj = { val: 0 };
+                gsap.to(obj, {
+                    val: t.end,
+                    duration: 2.2,
+                    ease: "power2.out",
+                    onUpdate: function () {
+                        element.innerText = Math.floor(obj.val) + (t.suffix || '');
+                    }
+                });
+            });
+        }
+
+
+        // Slide 2: Interactive Before/After split slider
+        const comparisonContainer = document.getElementById('comparison-container');
+        const sliderHandle = document.getElementById('slider-handle');
+        const chaosHalf = document.getElementById('chaos-half');
+        const solutionHalf = document.getElementById('solution-half');
+
+        let isDragging = false;
+        let sliderPercent = 50;
+
+        function updateComparisonSlider(percent) {
+            sliderPercent = Math.max(8, Math.min(92, percent));
+            sliderHandle.style.left = `${sliderPercent}%`;
+            chaosHalf.style.clipPath = `inset(0 ${100 - sliderPercent}% 0 0)`;
+            solutionHalf.style.clipPath = `inset(0 0 0 ${sliderPercent}%)`;
+        }
+
+        updateComparisonSlider(50);
+
+        sliderHandle.addEventListener('mousedown', (e) => { isDragging = true; e.preventDefault(); });
+        sliderHandle.addEventListener('touchstart', (e) => { isDragging = true; }, { passive: true });
+        document.addEventListener('mouseup', () => { isDragging = false; });
+        document.addEventListener('touchend', () => { isDragging = false; });
+
+        function handleSliderDrag(clientX) {
+            const containerRect = comparisonContainer.getBoundingClientRect();
+            let dragX = clientX - containerRect.left;
+            const percentage = (dragX / containerRect.width) * 100;
+            updateComparisonSlider(percentage);
+            playBeep(200 + percentage * 3, 0.02, 0.008, true);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            handleSliderDrag(e.clientX);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging || !e.touches[0]) return;
+            handleSliderDrag(e.touches[0].clientX);
+        }, { passive: true });
+
+
+        // Slide 3: Telemetry sequence simulation
+        const scenarioLogs = [
+            { text: "INGESTING SCENARIO: karachi_flood ( monsoon heavy rain warning )", class: "text-white" },
+            { text: "WS CONNECTION: connected. status: detecting.", class: "text-purpleAccent" },
+            { text: "→ 6 multilingual crisis signals registered in Clifton & Saddar...", class: "text-purpleAccent" },
+            { text: "SIGNAL_EXTRACTION AGENT: normalising text profiles...", class: "text-cyanAccent" },
+            { text: "├─ Roman Urdu: 'sadak swimming pool ban gayi' -> Flooded street, high urgency", class: "text-green-400" },
+            { text: "├─ English: 'Saddar underpass completely blocked' -> Congestion, high urgency", class: "text-green-400" },
+            { text: "└─ Weather Sensor: 85mm rainfall detected -> Water accumulation match", class: "text-green-400" },
+            { text: "CRISIS_DETECTION AGENT: clustering coordinates...", class: "text-cyanAccent" },
+            { text: "├─ Inundation centroid: Clifton Block 5 / MA Jinnah Road corridor", class: "text-green-400" },
+            { text: "└─ Threat classification: Urban Flooding. Confidence: 0.91", class: "text-green-400" },
+            { text: "SEVERITY_REASONING AGENT: parsing weather and traffic delta...", class: "text-cyanAccent" },
+            { text: "├─ Congestion Index: 0.87. Stranded vehicles estimated: 120+", class: "text-green-400" },
+            { text: "└─ Escalation policy match: CRITICAL level. Auto-dispatch activated.", class: "text-yellow-400" },
+            { text: "EMERGENCY_PLANNING AGENT: executing SOP-pack plan v1...", class: "text-cyanAccent" },
+            { text: "RESOURCE_ALLOCATION AGENT: inventory check & assignment...", class: "text-cyanAccent" },
+            { text: "├─ Dispatched 2 Water Rescue Units to Clifton", class: "text-green-400" },
+            { text: "├─ Dispatched 1 Ambulance team to Saddar", class: "text-green-400" },
+            { text: "└─ Deployed 1 High-Capacity pump team to Drain KHI-07", class: "text-green-400" },
+            { text: "TRAFFIC_REROUTING AGENT: recalculating route options...", class: "text-cyanAccent" },
+            { text: "└─ Detour path set: MA Jinnah -> Boat Basin. Saddar underpass approach CLOSED.", class: "text-yellow-400" },
+            { text: "CITIZEN_ALERT AGENT: compiling safety broadcast alert...", class: "text-cyanAccent" },
+            { text: "└─ Text: 'Saddar Underpass bilkul band hai...' (UR/EN sent to 84,200 devices)", class: "text-green-400" },
+            { text: "EXECUTION AGENT: invoking tool registry handlers...", class: "text-cyanAccent" },
+            { text: "├─ TOOL: updateTrafficRoutes (SUCCESS)", class: "text-green-400" },
+            { text: "├─ TOOL: dispatchRescueTeams (SUCCESS)", class: "text-green-400" },
+            { text: "└─ TOOL: sendEmergencyAlerts (SUCCESS)", class: "text-green-400" },
+            { text: "REFLECTION AGENT: evaluating simulation twin metrics...", class: "text-cyanAccent" },
+            { text: "├─ Congestion reduced: 35%. Stranded reduced: 62%", class: "text-green-400" },
+            { text: "├─ WARNING: Kashmir Highway blockage unresolved", class: "text-yellow-400" },
+            { text: "└─ REPLAN REQUIRED: Launching emergency replan version v2...", class: "text-yellow-400" },
+            { text: "REFLECTION → PLANNING (v2): extending Korangi Creek detour...", class: "text-cyanAccent" },
+            { text: "└─ Dispatched secondary pump team to Korangi (SUCCESS)", class: "text-green-400" },
+            { text: "PIPELINE COMPLETED. Adaptive loop resolved successfully in 84 seconds.", class: "text-purpleAccent" }
+        ];
+
+        function startConsoleDemo() {
+            if (isConsoleRunning) return;
+            isConsoleRunning = true;
+
+            const consoleBox = document.getElementById('console-output');
+            const runBtn = document.getElementById('run-demo-btn');
+
+            consoleBox.innerHTML = '';
+            runBtn.innerText = "RUNNING...";
+            runBtn.disabled = true;
+
+            // Rainfall + storm audio + flood waves — all start on click
+            startMonsoonRainfall();
+
+            let logIndex = 0;
+
+            function printNextLine() {
+                if (logIndex < scenarioLogs.length) {
+                    const line = scenarioLogs[logIndex];
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = `opacity-0 -translate-y-1 transition-all duration-300 font-mono ${line.class}`;
+                    lineDiv.innerText = `[${new Date().toLocaleTimeString()}] ${line.text}`;
+                    consoleBox.appendChild(lineDiv);
+
+                    setTimeout(() => {
+                        lineDiv.className = `font-mono transition-all duration-300 ${line.class}`;
+                    }, 50);
+
+                    consoleBox.scrollTop = consoleBox.scrollHeight;
+                    logIndex++;
+
+                    if (line.class.includes('cyanAccent')) {
+                        playBeep(800, 0.05, 0.015, true);
+                    } else if (line.class.includes('yellow')) {
+                        playBeep(400, 0.15, 0.02, true);
+                    } else {
+                        playBeep(550, 0.03, 0.01, true);
+                    }
+
+                    setTimeout(printNextLine, 550);
+                } else {
+                    isConsoleRunning = false;
+                    runBtn.innerText = "▶ RUN DEMO";
+                    runBtn.disabled = false;
+                }
+            }
+
+            printNextLine();
+        }
+
+        // Highlight active SVG nodes
+        function highlightNode(nodeId, desc) {
+            playBeep(700, 0.08, 0.025);
+
+            // remove active classes
+            document.querySelectorAll('.node-circle').forEach(circle => {
+                circle.style.fill = "#0B131E";
+                circle.style.stroke = "#1E2A38";
+            });
+
+            // add active class to target
+            const activeCircle = document.getElementById(`circle-${nodeId}`);
+            if (activeCircle) {
+                activeCircle.style.fill = "#0F2A2A";
+                activeCircle.style.stroke = "#00FFC6";
+            }
+
+            document.getElementById('flow-description').innerText = `[Telemtry Audit - ${nodeId.toUpperCase()}]: ${desc}`;
+        }
+
+
+        // Final Pitch Closing Sequence
+        function triggerClosingSequence() {
+            playBeep(150, 1.2, 0.08); // deep sweep
+
+            const overlay = document.getElementById('finale-overlay');
+            overlay.className = "fixed inset-0 bg-void z-[9999] opacity-100 pointer-events-auto flex flex-col items-center justify-center transition-opacity duration-1000";
+
+            // Add custom particle explosions or triggers
+            setTimeout(() => {
+                playBeep(600, 0.5, 0.03);
+            }, 800);
+        }
+
+
+        // ==========================================
+        // THREE.JS WATER WAVING SURFACE AND BACKGROUND
+        // ==========================================
+        let scene, camera, renderer, waveMesh;
+        let clock = new THREE.Clock();
+
+        function initBackgroundThreeJS() {
+            const container = document.getElementById('bg-canvas-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030508, 0.012);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.set(0, 75, 120);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Grid Waving Water mesh
+            const geometry = new THREE.PlaneGeometry(300, 300, 45, 45);
+            geometry.rotateX(-Math.PI / 2);
+
+            // Procedural material with glowing grid lines
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x00FFC6,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.06
+            });
+
+            waveMesh = new THREE.Mesh(geometry, material);
+            scene.add(waveMesh);
+
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0x00FFC6, 0.8);
+            directionalLight.position.set(0, 100, 50);
+            scene.add(directionalLight);
+
+            // FPS telemetry tracker
+            let lastTime = performance.now();
+            let frameCount = 0;
+
+            function animateThreeJS() {
+                requestAnimationFrame(animateThreeJS);
+
+                // calculate simple FPS
+                frameCount++;
+                const time = performance.now();
+                if (time >= lastTime + 1000) {
+                    document.getElementById('telemetry-fps').innerText = Math.round((frameCount * 1000) / (time - lastTime));
+                    frameCount = 0;
+                    lastTime = time;
+                }
+
+                const elapsed = clock.getElapsedTime();
+
+                // Animate mesh vertices to make wave structures
+                const pos = waveMesh.geometry.attributes.position;
+                const waveScale = rainIntensity === 'heavy' ? 4.5 : (rainIntensity === 'low' ? 1.5 : 0.2);
+                const waveSpeed = rainIntensity === 'heavy' ? 2.2 : (rainIntensity === 'low' ? 1.2 : 0.25);
+
+                document.getElementById('telemetry-speed').innerText = (waveScale * 0.4).toFixed(1) + "m/s";
+
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const z = pos.getZ(i);
+                    // Wave formulas (sine combos)
+                    const y = Math.sin(x * 0.04 + elapsed * waveSpeed) * Math.cos(z * 0.04 + elapsed * waveSpeed) * waveScale;
+                    pos.setY(i, y);
+                }
+                pos.needsUpdate = true;
+
+                // Subtle mesh camera rotation based on mouse hover parallax
+                waveMesh.rotation.y = (mouseX * 0.02);
+                waveMesh.rotation.z = (mouseY * 0.02);
+
+                renderer.render(scene, camera);
+            }
+
+            animateThreeJS();
+        }
+
+        // Mouse Parallax Trackers
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            initRainCanvas();
+        });
+
+        // Initialize Background wave shader scenes
+        window.addEventListener('load', () => {
+            initBackgroundThreeJS();
+            initRainCanvas();
+            autoAdjustRainForSlide(1);
+            triggerSlideGSAPAnimations(1);
+            updateComparisonSlider(50);
+        });
+
+        function changeRainIntensity(val) {
+            rainIntensity = val;
+            document.getElementById('rain-intensity').value = val;
+
+            const levelEl = document.getElementById('telemetry-level');
+            if (val === 'none') {
+                levelEl.innerText = "MONITOR";
+                levelEl.className = "text-slate-500 font-semibold";
+            } else if (val === 'low') {
+                levelEl.innerText = "ADVISORY";
+                levelEl.className = "text-yellow-500 font-semibold";
+            } else if (val === 'heavy') {
+                levelEl.innerText = "CRITICAL";
+                levelEl.className = "text-red-500 font-semibold";
+            }
+
+            if (val === 'heavy' && !visualRainActive) {
+                startVisualRain();
+            } else if (val !== 'heavy' && !isConsoleRunning) {
+                stopVisualRain();
+            }
+        }
+
+        function autoAdjustRainForSlide(slideIndex) {
+            if (isConsoleRunning || monsoonAutoStopTimer) return;
+            stopVisualRain();
+            stopStormAudio();
+            clearMonsoonAutoStop();
+            if (slideIndex === 1) {
+                changeRainIntensity('low');
+            } else if (slideIndex === 2) {
+                changeRainIntensity('low');
+            } else if (slideIndex === 3) {
+                changeRainIntensity('none');
+            } else if (slideIndex === 5 || slideIndex === 6) {
+                changeRainIntensity('low');
+            } else {
+                changeRainIntensity('low');
+            }
+        }
+    </script>
+</body>
+
+</html>
