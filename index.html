@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>CityBrain AI — Autonomous Crisis Intelligence Operating System</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -99,13 +99,131 @@
             box-shadow: 0 10px 30px rgba(0, 255, 198, 0.15);
         }
 
+        /* App shell — header / stage / footer never overlap */
+        #presentation-shell {
+            position: relative;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            max-height: inherit;
+        }
+
+        .presentation-header,
+        .presentation-footer {
+            flex-shrink: 0;
+            z-index: 50;
+            background: rgba(3, 5, 8, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .presentation-header {
+            border-bottom: 1px solid rgba(30, 41, 59, 0.65);
+        }
+
+        .presentation-footer {
+            border-top: 1px solid rgba(30, 41, 59, 0.65);
+        }
+
+        .navbar-inner,
+        .footer-inner {
+            width: 100%;
+            max-width: 80rem;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: max(0.75rem, var(--safe-left));
+            padding-right: max(0.75rem, var(--safe-right));
+        }
+
+        .navbar-inner {
+            padding-top: max(0.625rem, var(--safe-top));
+            padding-bottom: 0.625rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .navbar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .navbar-actions > * {
+            flex-shrink: 0;
+        }
+
+        .presentation-stage {
+            position: relative;
+            flex: 1 1 auto;
+            min-height: 0;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .footer-inner {
+            padding-top: 0.625rem;
+            padding-bottom: max(0.625rem, var(--safe-bottom));
+        }
+
+        .footer-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+
+        #slide-indicators {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.125rem 0;
+        }
+
+        .footer-nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .navbar-actions button,
+        .navbar-actions label,
+        .footer-nav-buttons button,
+        .slide-indicator {
+            min-height: 2.25rem;
+        }
+
+        @media (min-width: 640px) {
+            .navbar-actions button,
+            .navbar-actions label,
+            .footer-nav-buttons button {
+                min-height: 0;
+            }
+        }
+
         /* Slide structure */
         .slide-scene {
             position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
-            top: 0;
-            left: 0;
             opacity: 0;
             visibility: hidden;
             transform: scale(0.95) translateZ(-50px);
@@ -113,9 +231,14 @@
                 opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
                 visibility 1.2s ease;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
-            padding: 5vh 5vw;
+            padding: 0.875rem 0.75rem 1rem;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
 
         .slide-scene.active {
@@ -204,7 +327,23 @@
 
         /* Slide typography helpers */
         .slide-header {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+
+        .console-toolbar {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 0.5rem 0.75rem;
+        }
+
+        .console-toolbar-title {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: center;
         }
 
         .slide-tagline {
@@ -242,17 +381,27 @@
         }
 
         /* Before/After comparison layers */
+        #comparison-container {
+            --split-pct: 50%;
+            min-height: 300px;
+            height: clamp(280px, 42vh, 420px);
+        }
+
         .comparison-layer {
             position: absolute;
             inset: 0;
             display: flex;
-            align-items: center;
-            padding: 2rem 3rem;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 1rem 0.75rem 2.25rem;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         .comparison-chaos {
             z-index: 1;
             background: linear-gradient(135deg, rgba(127, 29, 29, 0.35) 0%, rgba(3, 5, 8, 0.85) 100%);
+            justify-content: flex-start;
         }
 
         .comparison-clarity {
@@ -261,9 +410,205 @@
             justify-content: flex-end;
         }
 
-        #comparison-container {
-            min-height: 280px;
-            height: 42vh;
+        .comparison-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 0;
+            max-height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 0.25rem;
+        }
+
+        .comparison-chaos .comparison-content {
+            max-width: calc(var(--split-pct) - 1.75rem);
+            padding-right: 0.5rem;
+        }
+
+        .comparison-clarity .comparison-content {
+            max-width: calc(100% - var(--split-pct) - 1.75rem);
+            margin-left: auto;
+            padding-left: 0.5rem;
+        }
+
+        .comparison-layer .comparison-points > div {
+            align-items: flex-start;
+            line-height: 1.35;
+        }
+
+        .comparison-corner-label {
+            position: absolute;
+            bottom: 0.5rem;
+            z-index: 12;
+            pointer-events: none;
+            font-size: 0.625rem;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .comparison-corner-label--before {
+            left: 0.75rem;
+            color: rgba(248, 113, 113, 0.7);
+        }
+
+        .comparison-corner-label--after {
+            right: 0.75rem;
+            color: rgba(0, 255, 198, 0.7);
+        }
+
+        /* Slide 3 — stacked blocks, no viewport squeeze on mobile */
+        #slide-3.slide-scene {
+            align-items: flex-start !important;
+        }
+
+        #slide-3 .slide-3-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+            width: 100%;
+            height: auto !important;
+            min-height: min-content;
+        }
+
+        #slide-3 .slide-3-block {
+            flex: none;
+            width: 100%;
+            min-height: auto;
+            overflow: visible;
+            position: relative;
+            isolation: isolate;
+        }
+
+        #slide-3 .slide-3-architecture.slide-stack {
+            gap: 1rem;
+            overflow: visible;
+            max-height: none;
+            padding-bottom: 0;
+        }
+
+        #slide-3 .slide-3-intro {
+            margin-bottom: 0.25rem;
+        }
+
+        #slide-3 .slide-3-agents {
+            margin-top: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        #slide-3 .pipeline-flow-wrap {
+            width: 100%;
+            flex: none;
+            overflow: hidden;
+            margin: 0.5rem 0 0.75rem;
+            padding: 0.625rem 0.5rem;
+            border: 1px solid rgba(30, 41, 59, 0.55);
+            border-radius: 0.75rem;
+            background: rgba(3, 5, 8, 0.55);
+            box-sizing: border-box;
+        }
+
+        #slide-3 .pipeline-flow-wrap svg {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            max-height: 11.5rem;
+            margin: 0 auto;
+            vertical-align: top;
+        }
+
+        #slide-3 #flow-description {
+            margin-top: 0.75rem;
+        }
+
+        #slide-3 .slide-3-demo.slide-stack {
+            gap: 1rem;
+            min-height: auto;
+            overflow: visible;
+        }
+
+        #slide-3 .console-panel {
+            flex: 0 0 auto !important;
+            min-height: 10.5rem;
+            max-height: 12.5rem;
+            height: auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        #slide-3 .console-body {
+            max-height: 9rem;
+        }
+
+        #slide-3 .slide-3-cards {
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 1023px) {
+            #slide-3 .slide-3-demo {
+                padding-top: 0.25rem;
+                border-top: 1px solid rgba(30, 41, 59, 0.65);
+            }
+        }
+
+        @media (min-width: 640px) {
+            #slide-3 .slide-3-layout {
+                gap: 2rem;
+            }
+
+            #slide-3 .pipeline-flow-wrap svg {
+                max-height: 13.5rem;
+            }
+
+            #slide-3 .console-panel {
+                min-height: 11.5rem;
+                max-height: 14rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            #slide-3 .slide-3-layout {
+                display: grid;
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+                gap: 2rem;
+                align-items: stretch;
+                max-height: 100%;
+            }
+
+            #slide-3 .slide-3-architecture {
+                grid-column: span 5;
+                overflow-y: auto;
+                overflow-x: hidden;
+                max-height: 100%;
+                -webkit-overflow-scrolling: touch;
+                padding-right: 1.5rem;
+                border-right: 1px solid rgba(15, 23, 42, 0.8);
+            }
+
+            #slide-3 .slide-3-demo {
+                grid-column: span 7;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            #slide-3 .console-panel {
+                flex: 1 1 auto !important;
+                min-height: 0;
+                max-height: none;
+            }
+
+            #slide-3 .console-body {
+                max-height: none;
+            }
+
+            #slide-3 .pipeline-flow-wrap svg {
+                max-height: min(240px, 36vh);
+                max-width: 22rem;
+            }
         }
 
         /* Console fills remaining panel height */
@@ -278,26 +623,32 @@
             overflow-y: auto;
         }
 
-        /* Roadmap timeline connector */
+        /* Roadmap timeline connector — above cards, below node badges */
+        #roadmap-timeline {
+            isolation: isolate;
+        }
+
         .roadmap-connector {
             position: absolute;
-            top: 2.75rem;
+            top: 2.875rem;
             left: 16.67%;
             right: 16.67%;
-            height: 2px;
-            background: linear-gradient(to right, #00FFC6, #8B5CF6, rgba(100, 116, 139, 0.5));
-            z-index: 1;
+            height: 3px;
+            border-radius: 2px;
+            background: linear-gradient(to right, #00FFC6, #8B5CF6, rgba(100, 116, 139, 0.65));
+            box-shadow: 0 0 8px rgba(0, 255, 198, 0.35), 0 0 12px rgba(139, 92, 246, 0.25);
+            z-index: 5;
             pointer-events: none;
         }
 
         .roadmap-milestone {
             position: relative;
-            z-index: 2;
+            z-index: 1;
         }
 
         .roadmap-node {
             position: relative;
-            z-index: 3;
+            z-index: 6;
         }
 
         /* Visual rainfall overlay */
@@ -326,31 +677,212 @@
 
         /* Layout variables */
         :root {
-            --header-h: 4.25rem;
-            --footer-h: 3.75rem;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+            --content-gap: 1rem;
         }
 
-        main {
-            padding-top: var(--header-h);
-            padding-bottom: var(--footer-h);
-            box-sizing: border-box;
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
             height: 100%;
-            min-height: 0;
         }
 
-        .presentation-header {
-            min-height: var(--header-h);
+        .slide-inner {
+            width: 100%;
+            max-width: 80rem;
+            margin-left: auto;
+            margin-right: auto;
+            padding-bottom: 0.5rem;
         }
 
-        .presentation-footer {
-            min-height: var(--footer-h);
+        .slide-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
-        /* Touch / mobile: normal cursor, hide side HUD */
-        @media (max-width: 1023px) {
+        @media (min-width: 640px) {
+            .slide-stack {
+                gap: 1rem;
+            }
+        }
+
+        /* Competitor table — stacked rows on narrow screens */
+        .competitor-table .competitor-head {
+            display: none;
+        }
+
+        .competitor-table .competitor-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.35rem;
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+        }
+
+        .competitor-table .competitor-row:last-child {
+            border-bottom: none;
+        }
+
+        .competitor-table .competitor-cap {
+            font-weight: 600;
+            color: #94a3b8;
+            padding-bottom: 0.15rem;
+        }
+
+        .competitor-table .competitor-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.15rem 0;
+        }
+
+        .competitor-table .competitor-score::before {
+            content: attr(data-label);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+
+        .competitor-table .competitor-score[data-label="Typical Chatbot"]::before {
+            color: rgba(248, 113, 113, 0.85);
+        }
+
+        .competitor-table .competitor-score[data-label="Static Dashboard"]::before {
+            color: rgba(234, 179, 8, 0.85);
+        }
+
+        .competitor-table .competitor-score[data-label="CityBrain AI"]::before {
+            color: #00FFC6;
+        }
+
+        @media (min-width: 640px) {
+            .competitor-table .competitor-head {
+                display: grid;
+            }
+
+            .competitor-table .competitor-row {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 0;
+                padding: 0;
+                border-bottom: none;
+            }
+
+            .competitor-table .competitor-cap {
+                padding: 0.5rem 0.625rem;
+                font-weight: 400;
+            }
+
+            .competitor-table .competitor-score {
+                display: block;
+                text-align: center;
+                padding: 0.5rem 0.625rem;
+            }
+
+            .competitor-table .competitor-score::before {
+                content: none;
+            }
+
+            .competitor-table .competitor-row:not(:last-child) {
+                border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+            }
+        }
+
+        /* Touch-friendly controls */
+        @media (hover: none), (pointer: coarse) {
+            body {
+                cursor: auto;
+            }
+
+            .custom-cursor,
+            .custom-cursor-glow {
+                display: none !important;
+            }
+
+            button,
+            a,
+            select,
+            .slider-handle,
+            .slide-indicator,
+            [onclick] {
+                cursor: pointer !important;
+            }
+        }
+
+        @media (min-width: 640px) {
+            .navbar-inner {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+                padding-top: max(0.75rem, var(--safe-top));
+                padding-bottom: 0.75rem;
+            }
+
+            .navbar-actions {
+                width: auto;
+                justify-content: flex-end;
+            }
+
+            .slide-scene {
+                padding: 1rem 1.25rem 1.25rem;
+            }
+
+            .footer-bar {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+            }
+
+            #slide-indicators {
+                flex: 1;
+                justify-content: center;
+                order: 0;
+            }
+
+            .footer-nav-buttons {
+                width: auto;
+                justify-content: flex-end;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .slide-scene {
+                padding: 1.25rem 1.5rem 1.5rem;
+                align-items: center;
+            }
+
+            .slide-scene.stretch-slide {
+                align-items: stretch;
+            }
+        }
+
+        /* Tablet & below: hide side HUD */
+        @media (max-width: 1279px) {
             .telemetry-hud {
                 display: none !important;
             }
+
+            .slide-scene.stretch-slide {
+                min-height: 100%;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            #comparison-container {
+                min-height: 260px;
+                height: clamp(260px, 38vh, 360px);
+                flex-grow: 0;
+                margin-top: 0.25rem;
+                margin-bottom: 0.25rem;
+            }
+
         }
 
         @media (max-width: 767px) {
@@ -363,45 +895,59 @@
                 display: none !important;
             }
 
-            .slide-scene {
-                padding: 0.75rem 0.875rem;
-                overflow-x: hidden;
-                overflow-y: auto;
-                align-items: flex-start;
-                justify-content: flex-start;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .slide-scene.stretch-slide {
-                min-height: 100%;
-            }
-
             #comparison-container {
-                min-height: 220px;
-                height: min(38vh, 320px);
+                min-height: 240px;
+                height: clamp(240px, 36vh, 320px);
             }
 
             .comparison-layer {
-                padding: 1rem 0.875rem;
-                align-items: flex-start;
-                padding-top: 2.5rem;
+                padding: 0.65rem 0.5rem 2rem;
             }
 
-            .comparison-layer .max-w-md {
-                max-width: 100%;
+            .comparison-chaos .comparison-content,
+            .comparison-clarity .comparison-content {
+                max-width: calc(var(--split-pct) - 1.25rem);
+            }
+
+            .comparison-clarity .comparison-content {
+                max-width: calc(100% - var(--split-pct) - 1.25rem);
             }
 
             .comparison-chaos h3,
             .comparison-clarity h3 {
-                font-size: 1.1rem;
+                font-size: 1rem;
+                line-height: 1.2;
             }
 
-            .comparison-layer .font-mono.text-sm {
-                font-size: 0.65rem;
+            .comparison-banner {
+                font-size: 0.6rem !important;
+                letter-spacing: 0.06em;
+                line-height: 1.3;
+            }
+
+            .comparison-layer .comparison-points {
+                font-size: 0.6rem;
+                gap: 0.35rem;
             }
 
             .comparison-layer .comparison-points > div:nth-child(n+4) {
                 display: none;
+            }
+
+            .comparison-clarity .comparison-content {
+                text-align: left;
+            }
+
+            .comparison-clarity .comparison-points > div {
+                justify-content: flex-start !important;
+            }
+
+            .comparison-clarity .comparison-banner {
+                justify-content: flex-start !important;
+            }
+
+            .comparison-clarity .comparison-banner span {
+                text-align: left !important;
             }
 
             .slider-handle-dot {
@@ -410,34 +956,31 @@
                 font-size: 0.7rem;
             }
 
-            .console-panel {
-                min-height: 200px;
-            }
-
             .roadmap-connector {
                 display: none !important;
             }
 
-            #slide-1 .lg\:col-span-5 {
+            #slide-1 .lg\:col-span-5,
+            #slide-4 .lg\:col-span-5 {
                 border-right: none !important;
                 padding-right: 0 !important;
             }
 
-            #slide-5 .glass-panel.rounded-xl.overflow-hidden {
-                overflow-x: auto;
+            .market-metric-card {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.5rem;
             }
 
-            #slide-5 .glass-panel.rounded-xl.overflow-hidden .grid {
-                min-width: 480px;
+            .persona-card {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.75rem;
             }
+
         }
 
         @media (max-width: 480px) {
-            :root {
-                --header-h: 5.5rem;
-                --footer-h: 4.25rem;
-            }
-
             .slide-title {
                 font-size: 1.35rem;
             }
@@ -448,25 +991,90 @@
             }
 
             #comparison-container {
-                min-height: 180px;
-                height: 28vh;
+                min-height: 220px;
+                height: clamp(220px, 34vh, 300px);
             }
 
-            .header-controls .header-label {
+            .comparison-chaos h3,
+            .comparison-clarity h3 {
+                font-size: 0.9rem;
+            }
+
+            .navbar-brand .header-label {
                 display: none;
+            }
+
+            #slide-1-title {
+                font-size: 1.75rem !important;
+            }
+
+            .roadmap-milestone {
+                padding: 0.875rem !important;
+            }
+
+            .roadmap-milestone h4 {
+                font-size: 0.95rem;
+            }
+        }
+
+        /* Short landscape phones */
+        @media (max-height: 32rem) and (orientation: landscape) {
+            .navbar-inner {
+                flex-direction: row;
+                padding-top: max(0.375rem, var(--safe-top));
+                padding-bottom: 0.375rem;
+                gap: 0.5rem;
+            }
+
+            .footer-inner {
+                padding-top: 0.375rem;
+                padding-bottom: max(0.375rem, var(--safe-bottom));
+            }
+
+            .footer-bar {
+                flex-direction: row;
+                gap: 0.5rem;
+            }
+
+            .slide-scene {
+                padding: 0.5rem 0.75rem 0.625rem;
+            }
+
+            #comparison-container {
+                min-height: 140px;
+                height: min(45vh, 200px);
+            }
+
+            #slide-3 .pipeline-flow-wrap svg {
+                max-height: 7.5rem;
+            }
+
+            #slide-3 .console-panel {
+                min-height: 8rem;
+                max-height: 9rem;
+            }
+
+            #slide-3 .console-body {
+                max-height: 6rem;
+            }
+
+            .slide-title {
+                font-size: 1.15rem;
             }
         }
 
         /* Prefer dynamic viewport on mobile browsers */
         @supports (height: 100dvh) {
-            body {
+            body,
+            #presentation-shell {
                 height: 100dvh;
+                max-height: 100dvh;
             }
         }
     </style>
 </head>
 
-<body class="bg-void text-slate-200 font-sans h-screen min-h-screen overflow-hidden select-none relative">
+<body class="bg-void text-slate-200 font-sans h-screen min-h-screen max-h-[100dvh] overflow-hidden select-none relative">
 
     <!-- Custom Cursor elements -->
     <div id="custom-cursor" class="custom-cursor"></div>
@@ -502,44 +1110,52 @@
         <span>LEVEL: <span id="telemetry-level" class="text-cyanAccent font-semibold">CRITICAL</span></span>
     </div>
 
-    <!-- Audio / Presenter Controls in header -->
-    <header class="presentation-header absolute top-0 left-0 w-full px-3 sm:px-6 md:px-8 lg:px-12 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 z-50">
-        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div class="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 bg-cyanAccent rounded-full shadow-[0_0_10px_#00FFC6]" id="logo-node"></div>
-            <span class="font-outfit text-base sm:text-xl font-bold tracking-tight text-white truncate">CityBrain <span
-                    class="text-cyanAccent">AI</span></span>
-            <span class="header-label hidden md:inline text-xs font-mono text-slate-500 border-l border-slate-800 pl-3">OPERATIONAL OS</span>
-        </div>
+    <!-- App shell: navbar + slides + footer (no overlap) -->
+    <div id="presentation-shell">
 
-        <div class="header-controls flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end">
-            <button id="sound-btn" onclick="toggleAmbientSynth()"
-                class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-slate-400 hover:text-cyanAccent transition-colors flex items-center gap-1.5">
-                <span id="sound-icon">🔈</span> <span class="hidden sm:inline">SOUND OFF</span>
-            </button>
-
-            <div class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-cyanAccent flex items-center gap-1.5">
-                <span class="hidden sm:inline">SIM:</span>
-                <select id="rain-intensity" onchange="changeRainIntensity(this.value)"
-                    class="bg-transparent border-none text-cyanAccent outline-none font-semibold text-[10px] sm:text-xs max-w-[5.5rem] sm:max-w-none">
-                    <option value="none" selected class="bg-void text-slate-400">Off</option>
-                    <option value="low" class="bg-void text-slate-400">Rain Low</option>
-                    <option value="heavy" class="bg-void text-slate-400">Flood High</option>
-                </select>
+    <header class="presentation-header w-full" role="banner">
+        <div class="navbar-inner">
+            <div class="navbar-brand w-full sm:w-auto">
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div class="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 bg-cyanAccent rounded-full shadow-[0_0_10px_#00FFC6]" id="logo-node" aria-hidden="true"></div>
+                    <div class="min-w-0 flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                        <span class="font-outfit text-base sm:text-xl font-bold tracking-tight text-white truncate leading-tight">CityBrain <span class="text-cyanAccent">AI</span></span>
+                        <span class="header-label hidden md:inline text-xs font-mono text-slate-500 sm:border-l sm:border-slate-800 sm:pl-3 shrink-0">OPERATIONAL OS</span>
+                    </div>
+                </div>
+                <div class="glass-panel text-[10px] sm:text-xs font-mono px-2.5 py-1 rounded-full text-white shrink-0 sm:hidden" id="slide-num-mobile" aria-live="polite">01 / 06</div>
             </div>
 
-            <div class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-white shrink-0" id="slide-num">01 / 06</div>
+            <nav class="navbar-actions" aria-label="Presentation controls">
+                <button id="sound-btn" type="button" onclick="toggleAmbientSynth()"
+                    class="glass-panel text-[10px] sm:text-xs font-mono px-2.5 sm:px-3 py-1.5 rounded-full text-slate-400 hover:text-cyanAccent transition-colors inline-flex items-center gap-1.5">
+                    <span id="sound-icon" aria-hidden="true">🔈</span>
+                    <span class="hidden sm:inline">SOUND OFF</span>
+                </button>
+
+                <label class="glass-panel text-[10px] sm:text-xs font-mono px-2.5 sm:px-3 py-1.5 rounded-full text-cyanAccent inline-flex items-center gap-1.5">
+                    <span class="hidden sm:inline">SIM:</span>
+                    <select id="rain-intensity" onchange="changeRainIntensity(this.value)" aria-label="Rain simulation intensity"
+                        class="bg-transparent border-none text-cyanAccent outline-none font-semibold text-[10px] sm:text-xs max-w-[4.75rem] sm:max-w-none cursor-pointer">
+                        <option value="none" selected class="bg-void text-slate-400">Off</option>
+                        <option value="low" class="bg-void text-slate-400">Rain Low</option>
+                        <option value="heavy" class="bg-void text-slate-400">Flood High</option>
+                    </select>
+                </label>
+
+                <div class="glass-panel text-[10px] sm:text-xs font-mono px-2.5 sm:px-3 py-1.5 rounded-full text-white shrink-0 hidden sm:block" id="slide-num" aria-live="polite">01 / 06</div>
+            </nav>
         </div>
     </header>
 
-    <!-- Presentation Stage Container -->
-    <main class="w-full h-full relative z-10">
+    <main class="presentation-stage" role="main">
 
         <!-- SLIDE 1: Title & Team Introduction -->
-        <section class="slide-scene active overflow-y-auto lg:overflow-hidden" id="slide-1">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start lg:items-center w-full max-w-7xl py-1 lg:py-0">
+        <section class="slide-scene active overflow-x-hidden overflow-y-auto" id="slide-1">
+            <div class="slide-inner grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start lg:items-center w-full">
 
                 <!-- Left Title Section -->
-                <div class="lg:col-span-5 flex flex-col justify-center h-full pr-0 lg:pr-4 border-0 lg:border-r border-slate-900">
+                <div class="lg:col-span-5 slide-stack justify-center pr-0 lg:pr-6 border-0 lg:border-r border-slate-900/80 pb-6 lg:pb-0">
                     <span class="font-mono text-cyanAccent tracking-widest text-xs sm:text-sm uppercase mb-2 block opacity-80"
                         id="slide-1-subtitle">Google Antigravity Hackathon 2026 · Regional Finals</span>
                     <h1 class="font-outfit text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-none tracking-tight mb-3"
@@ -572,17 +1188,17 @@
                 </div>
 
                 <!-- Right Team Section -->
-                <div class="lg:col-span-7 flex flex-col gap-4">
-                    <div class="flex justify-between items-center mb-1">
+                <div class="lg:col-span-7 slide-stack sm:gap-4">
+                    <div class="flex flex-wrap justify-between items-center gap-1 mb-1">
                         <h3 class="font-outfit text-xl sm:text-2xl font-bold text-white">Core Team</h3>
-                        <span class="text-xs font-mono text-cyanAccent">4 ENGINEERS · 1 VISION</span>
+                        <span class="text-[10px] sm:text-xs font-mono text-cyanAccent shrink-0">4 ENGINEERS · 1 VISION</span>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="team-grid grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <!-- Daniyal -->
-                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
-                            <div class="flex justify-between items-start">
-                                <span class="font-outfit text-lg font-bold text-white">M. Daniyal</span>
+                        <div class="glass-panel rounded-xl p-4 sm:p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <div class="flex flex-wrap justify-between items-start gap-1">
+                                <span class="font-outfit text-base sm:text-lg font-bold text-white">M. Daniyal</span>
                                 <span
                                     class="text-[10px] font-mono bg-cyanAccent/10 text-cyanAccent px-2 py-0.5 rounded border border-cyanAccent/20 font-semibold">PROJECT
                                     LEAD</span>
@@ -593,24 +1209,24 @@
                         </div>
 
                         <!-- Ali Hunain -->
-                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
-                            <span class="font-outfit text-lg font-bold text-white">Ali Hunain</span>
+                        <div class="glass-panel rounded-xl p-4 sm:p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <span class="font-outfit text-base sm:text-lg font-bold text-white">Ali Hunain</span>
                             <span class="text-xs font-mono text-purpleAccent font-medium">Software & AI Agent Engineer
                                 (Age: 23)</span>
                             <p class="text-xs text-slate-400 leading-relaxed mt-1">Built the 9-agent graph, structured JSON reasoning, and pgvector memory — the brain behind autonomous decisions.</p>
                         </div>
 
                         <!-- Muntazir -->
-                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
-                            <span class="font-outfit text-lg font-bold text-white">Muntazir Hassan</span>
+                        <div class="glass-panel rounded-xl p-4 sm:p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <span class="font-outfit text-base sm:text-lg font-bold text-white">Muntazir Hassan</span>
                             <span class="text-xs font-mono text-purpleAccent font-medium">Mobile Developer & Prompt
                                 Engineer (Age: 23)</span>
                             <p class="text-xs text-slate-400 leading-relaxed mt-1">Built the Expo mobile command center (7 crisis tabs) that judges interact with live — MAP, TRACE, EXEC, DELTA, and more.</p>
                         </div>
 
                         <!-- Hashim -->
-                        <div class="glass-panel rounded-xl p-5 flex flex-col gap-2 hover:-translate-y-1">
-                            <span class="font-outfit text-lg font-bold text-white">Muhammad Hashim</span>
+                        <div class="glass-panel rounded-xl p-4 sm:p-5 flex flex-col gap-2 hover:-translate-y-1">
+                            <span class="font-outfit text-base sm:text-lg font-bold text-white">Muhammad Hashim</span>
                             <span class="text-xs font-mono text-purpleAccent font-medium">DB Engineer & iOS Developer
                                 (Age: 27)</span>
                             <p class="text-xs text-slate-400 leading-relaxed mt-1">PostgreSQL + pgvector schema, crisis persistence, and citizen Flutter app — production-grade data layer.</p>
@@ -621,10 +1237,10 @@
         </section>
 
         <!-- SLIDE 2: The Problem & The AI Solution -->
-        <section class="slide-scene stretch-slide" id="slide-2">
-            <div class="flex flex-col w-full max-w-7xl h-full justify-between">
+        <section class="slide-scene stretch-slide overflow-x-hidden overflow-y-auto" id="slide-2">
+            <div class="slide-inner flex flex-col w-full min-h-0 gap-3 sm:gap-4">
 
-                <div class="slide-header">
+                <div class="slide-header shrink-0">
                     <span class="slide-tagline">Slide 2 · Challenge 3: CIRO</span>
                     <h2 class="slide-title">The Problem &amp; <span>Our AI Solution</span></h2>
                     <p class="text-slate-400 text-xs sm:text-sm mt-2 max-w-4xl leading-relaxed">
@@ -635,14 +1251,14 @@
                 </div>
 
                 <!-- Split Interactive Drag Slider -->
-                <div class="relative w-full flex-grow rounded-2xl border border-slate-800 overflow-hidden my-4 bg-void/50 select-none shadow-2xl"
+                <div class="relative w-full flex-grow rounded-2xl border border-slate-800 overflow-hidden my-1 sm:my-2 bg-void/50 select-none shadow-2xl shrink-0"
                     id="comparison-container">
 
                     <!-- BEFORE: Problem/Chaos (full layer, clipped left of handle) -->
                     <div class="comparison-layer comparison-chaos" id="chaos-half">
-                        <div class="max-w-md flex flex-col gap-3">
-                            <div class="flex items-center gap-3 text-red-500 font-mono text-sm tracking-wider">
-                                <span>🚨 BEFORE — LEVEL: WATCH / UNCOORDINATED</span>
+                        <div class="comparison-content">
+                            <div class="flex items-center gap-2 text-red-500 font-mono text-sm tracking-wider comparison-banner">
+                                <span class="break-words">🚨 BEFORE — WATCH / UNCOORDINATED</span>
                             </div>
                             <h3 class="font-outfit text-2xl md:text-3xl font-bold text-white">What Cities Do Today
                             </h3>
@@ -659,10 +1275,10 @@
 
                     <!-- AFTER: AI Solution (full layer, clipped right of handle) -->
                     <div class="comparison-layer comparison-clarity" id="solution-half">
-                        <div class="max-w-md flex flex-col gap-3 text-right ml-auto">
+                        <div class="comparison-content text-right">
                             <div
-                                class="flex items-center justify-end gap-3 text-cyanAccent font-mono text-sm tracking-wider">
-                                <span>⚡ AFTER — OPERATIONAL OS ACTIVE</span>
+                                class="flex items-center justify-end gap-2 text-cyanAccent font-mono text-sm tracking-wider comparison-banner">
+                                <span class="break-words text-right">⚡ AFTER — OS ACTIVE</span>
                             </div>
                             <h3 class="font-outfit text-2xl md:text-3xl font-bold text-white">What CityBrain Does
                             </h3>
@@ -681,34 +1297,29 @@
                         <div class="slider-handle-dot">↔</div>
                     </div>
 
-                    <!-- Labels -->
-                    <div
-                        class="absolute bottom-3 left-4 text-[10px] font-mono text-red-400/70 uppercase tracking-widest z-30 pointer-events-none">
-                        BEFORE</div>
-                    <div
-                        class="absolute bottom-3 right-4 text-[10px] font-mono text-cyanAccent/70 uppercase tracking-widest z-30 pointer-events-none">
-                        AFTER</div>
+                    <span class="comparison-corner-label comparison-corner-label--before">BEFORE</span>
+                    <span class="comparison-corner-label comparison-corner-label--after">AFTER</span>
                 </div>
 
                 <!-- Stat Counter row -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full shrink-0">
-                    <div class="glass-panel p-4 rounded-xl text-center">
-                        <span class="text-3xl font-black text-white font-outfit" id="stat-signals">0</span>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 w-full shrink-0">
+                    <div class="glass-panel p-2.5 sm:p-4 rounded-xl text-center">
+                        <span class="text-2xl sm:text-3xl font-black text-white font-outfit" id="stat-signals">0</span>
                         <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Signals Correlated</p>
                         <p class="text-[9px] text-slate-600 mt-0.5">6 multilingual Clifton/Saddar posts</p>
                     </div>
-                    <div class="glass-panel p-4 rounded-xl text-center">
-                        <span class="text-3xl font-black text-cyanAccent font-outfit" id="stat-urgency">0%</span>
+                    <div class="glass-panel p-2.5 sm:p-4 rounded-xl text-center">
+                        <span class="text-2xl sm:text-3xl font-black text-cyanAccent font-outfit" id="stat-urgency">0%</span>
                         <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Crisis Confidence</p>
                         <p class="text-[9px] text-slate-600 mt-0.5">CoT clustering score</p>
                     </div>
-                    <div class="glass-panel p-4 rounded-xl text-center">
-                        <span class="text-3xl font-black text-dangerAccent font-outfit" id="stat-delay">0s</span>
+                    <div class="glass-panel p-2.5 sm:p-4 rounded-xl text-center">
+                        <span class="text-2xl sm:text-3xl font-black text-dangerAccent font-outfit" id="stat-delay">0s</span>
                         <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Pipeline Latency</p>
                         <p class="text-[9px] text-slate-600 mt-0.5">Karachi flood demo E2E</p>
                     </div>
-                    <div class="glass-panel p-4 rounded-xl text-center">
-                        <span class="text-3xl font-black text-white font-outfit" id="stat-reduction">0%</span>
+                    <div class="glass-panel p-2.5 sm:p-4 rounded-xl text-center">
+                        <span class="text-2xl sm:text-3xl font-black text-white font-outfit" id="stat-reduction">0%</span>
                         <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase">Congestion Cleared</p>
                         <p class="text-[9px] text-slate-600 mt-0.5">Before/after DELTA tab</p>
                     </div>
@@ -717,23 +1328,23 @@
         </section>
 
         <!-- SLIDE 3: Technical Architecture & Live Demo -->
-        <section class="slide-scene stretch-slide" id="slide-3">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch w-full max-w-7xl h-full min-h-0">
+        <section class="slide-scene overflow-x-hidden overflow-y-auto" id="slide-3">
+            <div class="slide-inner slide-3-layout pb-4">
 
                 <!-- Architecture flow -->
-                <div class="lg:col-span-5 flex flex-col h-full min-h-0 py-2 border-0 lg:border-r border-slate-900 pr-0 lg:pr-6">
-                    <div class="shrink-0">
+                <div class="slide-3-block slide-stack slide-3-architecture py-1 sm:py-2">
+                    <div class="slide-3-intro shrink-0">
                         <span class="slide-tagline">Slide 3 · Technical Architecture &amp; Live Demo</span>
                         <h2 class="slide-title">Built, Deployed &amp; <span>Demo-Ready</span></h2>
-                        <p class="text-slate-400 text-xs font-light leading-relaxed mt-2 mb-3">
+                        <p class="text-slate-400 text-xs sm:text-sm font-light leading-relaxed mt-2">
                             Full-stack monorepo: Express API + WebSocket hub + 9-agent orchestrator + physics simulation twin +
                             Expo mobile command center. <strong class="text-white">Judges can verify live now</strong> — tap RUN DEMO or open the app.
                         </p>
                     </div>
 
                     <!-- Agent pipeline list -->
-                    <div class="glass-panel p-3 rounded-lg mb-3 shrink-0 border border-slate-800">
-                        <div class="grid grid-cols-3 gap-1.5 text-[9px] font-mono text-slate-500">
+                    <div class="slide-3-agents glass-panel p-3 sm:p-4 rounded-lg shrink-0 border border-slate-800">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1 sm:gap-1.5 text-[8px] sm:text-[9px] font-mono text-slate-500">
                             <span class="text-cyanAccent">01 Signal Extraction</span>
                             <span>02 Crisis Detection</span>
                             <span>03 Severity Reasoning</span>
@@ -747,8 +1358,8 @@
                     </div>
 
                     <!-- Flow SVG -->
-                    <div class="flex-1 min-h-0 flex items-center justify-center py-1">
-                        <svg viewBox="0 0 400 300" class="w-full max-w-md h-auto" id="pipeline-svg">
+                    <div class="pipeline-flow-wrap">
+                        <svg viewBox="0 0 400 300" id="pipeline-svg" aria-label="Agent pipeline flow diagram">
                             <path d="M 50,50 L 200,50 L 200,150 L 50,150 L 50,250 L 350,250" fill="none"
                                 stroke="rgba(255,255,255,0.05)" stroke-width="6" id="svg-flow-path-bg" />
                             <path d="M 50,50 L 200,50 L 200,150 L 50,150 L 50,250 L 350,250" fill="none"
@@ -828,22 +1439,20 @@
                     </div>
                 </div>
 
-                <!-- Right Live Demo Telemetry Simulator -->
-                <div class="lg:col-span-7 flex flex-col gap-3 h-full min-h-0 py-2">
+                <!-- Live Demo -->
+                <div class="slide-3-block slide-stack slide-3-demo py-1 sm:py-2">
+                    <h3 class="font-outfit text-sm sm:text-base font-bold text-white shrink-0 lg:hidden">Live Demo Console</h3>
                     <div
-                        class="glass-panel console-panel rounded-xl flex flex-col overflow-hidden bg-black/45 border border-slate-800 relative">
-                        <div
-                            class="bg-panel border-b border-slate-800/80 px-4 py-2.5 flex justify-between items-center shrink-0">
-                            <div class="flex gap-1.5">
-                                <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        class="glass-panel console-panel rounded-xl flex flex-col overflow-hidden bg-black/45 border border-slate-800 relative w-full">
+                        <div class="console-toolbar bg-panel border-b border-slate-800/80 px-3 sm:px-4 py-2.5 shrink-0">
+                            <div class="flex gap-1.5" aria-hidden="true">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 shrink-0"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0"></span>
                             </div>
-                            <span
-                                class="text-xs font-mono text-slate-500 tracking-wider">citybrain-orchestrator-console</span>
-                            <button id="run-demo-btn" onclick="startConsoleDemo()"
-                                class="bg-cyanAccent hover:shadow-glow text-void text-[10px] sm:text-xs font-mono font-bold px-2 sm:px-3 py-1 rounded transition-all whitespace-nowrap">▶
-                                RUN DEMO</button>
+                            <span class="console-toolbar-title text-[10px] sm:text-xs font-mono text-slate-500 tracking-wider">citybrain-console</span>
+                            <button type="button" id="run-demo-btn" onclick="startConsoleDemo()"
+                                class="bg-cyanAccent hover:shadow-glow text-void text-[10px] sm:text-xs font-mono font-bold px-2 sm:px-3 py-1 rounded transition-all whitespace-nowrap shrink-0">▶ RUN</button>
                         </div>
 
                         <div class="console-body p-4 font-mono text-xs text-sky-400 flex flex-col gap-1" id="console-output">
@@ -851,7 +1460,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0">
+                    <div class="slide-3-cards grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 shrink-0">
                         <a href="https://citybrain.tawha.com" target="_blank" class="glass-panel p-2.5 rounded-lg border border-cyanAccent/30 hover:border-cyanAccent transition-colors">
                             <span class="text-[9px] font-mono text-cyanAccent uppercase block">Mobile App ↗</span>
                             <span class="font-outfit text-xs font-bold text-white">Command Center</span>
@@ -874,11 +1483,11 @@
         </section>
 
         <!-- SLIDE 4: Market Opportunity & Target Audience -->
-        <section class="slide-scene stretch-slide" id="slide-4">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start lg:items-center w-full max-w-7xl h-full min-h-0 overflow-y-auto lg:overflow-visible">
+        <section class="slide-scene stretch-slide overflow-x-hidden overflow-y-auto" id="slide-4">
+            <div class="slide-inner grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start lg:items-center w-full min-h-0">
 
                 <!-- Left Market figures -->
-                <div class="lg:col-span-5 flex flex-col justify-center h-full pr-0 lg:pr-6 border-0 lg:border-r border-slate-900 market-metrics">
+                <div class="lg:col-span-5 slide-stack justify-center pr-0 lg:pr-6 border-0 lg:border-r border-slate-900/80 market-metrics pb-6 lg:pb-0">
                     <span class="slide-tagline">Slide 4 · Business Angle</span>
                     <h2 class="slide-title">Market Opportunity &amp; <span>Target Audience</span></h2>
                     <p class="text-slate-400 text-xs sm:text-sm mt-2 mb-4 leading-relaxed">
@@ -890,11 +1499,11 @@
                     <div class="flex flex-col gap-3 mt-1">
                         <!-- TAM -->
                         <div
-                            class="glass-panel p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-cyanAccent/50 transition-colors">
-                            <div>
-                                <span class="text-xs font-mono text-slate-500 block">TOTAL ADDRESSABLE MARKET
+                            class="market-metric-card glass-panel p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-2 hover:border-cyanAccent/50 transition-colors">
+                            <div class="min-w-0">
+                                <span class="text-[10px] sm:text-xs font-mono text-slate-500 block">TOTAL ADDRESSABLE MARKET
                                     (TAM)</span>
-                                <span class="font-outfit text-2xl font-black text-white">$320B</span>
+                                <span class="font-outfit text-xl sm:text-2xl font-black text-white">$320B</span>
                             </div>
                             <span class="text-xs font-mono bg-cyanAccent/10 text-cyanAccent px-2 py-1 rounded">Smart
                                 Cities</span>
@@ -902,11 +1511,11 @@
 
                         <!-- SAM -->
                         <div
-                            class="glass-panel p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-purpleAccent/50 transition-colors">
-                            <div>
-                                <span class="text-xs font-mono text-slate-500 block">SERVICEABLE ADDRESSABLE MARKET
+                            class="market-metric-card glass-panel p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-2 hover:border-purpleAccent/50 transition-colors">
+                            <div class="min-w-0">
+                                <span class="text-[10px] sm:text-xs font-mono text-slate-500 block">SERVICEABLE ADDRESSABLE MARKET
                                     (SAM)</span>
-                                <span class="font-outfit text-2xl font-black text-white">$45B</span>
+                                <span class="font-outfit text-xl sm:text-2xl font-black text-white">$45B</span>
                             </div>
                             <span
                                 class="text-xs font-mono bg-purpleAccent/10 text-purpleAccent px-2 py-1 rounded">Emergency
@@ -915,11 +1524,11 @@
 
                         <!-- SOM -->
                         <div
-                            class="glass-panel p-4 rounded-xl border border-slate-800 flex justify-between items-center hover:border-white transition-colors">
-                            <div>
-                                <span class="text-xs font-mono text-slate-500 block">SERVICEABLE OBTAINABLE MARKET
+                            class="market-metric-card glass-panel p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-2 hover:border-white transition-colors">
+                            <div class="min-w-0">
+                                <span class="text-[10px] sm:text-xs font-mono text-slate-500 block">SERVICEABLE OBTAINABLE MARKET
                                     (SOM)</span>
-                                <span class="font-outfit text-2xl font-black text-white">$8.4B</span>
+                                <span class="font-outfit text-xl sm:text-2xl font-black text-white">$8.4B</span>
                             </div>
                             <span class="text-xs font-mono bg-white/10 text-white px-2 py-1 rounded">AI Disaster
                                 Tech</span>
@@ -933,38 +1542,38 @@
                 </div>
 
                 <!-- Right Target Audience cards -->
-                <div class="lg:col-span-7 flex flex-col gap-3">
-                    <h3 class="font-outfit text-lg sm:text-xl font-bold text-white mb-1">User Personas — Who Pays, Who Benefits</h3>
+                <div class="lg:col-span-7 slide-stack">
+                    <h3 class="font-outfit text-lg sm:text-xl font-bold text-white">User Personas — Who Pays, Who Benefits</h3>
 
                     <!-- Govt Card -->
-                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex gap-4 items-center">
+                    <div class="persona-card glass-panel p-3 sm:p-4 rounded-xl border border-slate-800 flex gap-3 sm:gap-4 items-start sm:items-center">
                         <div
-                            class="w-12 h-12 bg-cyanAccent/10 rounded-lg flex items-center justify-center font-bold text-cyanAccent text-xl">
+                            class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 bg-cyanAccent/10 rounded-lg flex items-center justify-center font-bold text-cyanAccent text-lg sm:text-xl">
                             🏛️</div>
-                        <div>
-                            <h4 class="font-outfit text-base font-bold text-white">Persona 1 — Disaster Management Authority</h4>
+                        <div class="min-w-0">
+                            <h4 class="font-outfit text-sm sm:text-base font-bold text-white">Persona 1 — Disaster Management Authority</h4>
                             <p class="text-xs text-slate-400 leading-relaxed mt-1"><strong class="text-slate-300">PDMA / NDMA / KMC:</strong> Needs one command screen to see crisis confidence, allocate pumps &amp; ambulances, and prove response outcomes to government — not spreadsheets.</p>
                         </div>
                     </div>
 
                     <!-- Emergency Services -->
-                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex gap-4 items-center">
+                    <div class="persona-card glass-panel p-3 sm:p-4 rounded-xl border border-slate-800 flex gap-3 sm:gap-4 items-start sm:items-center">
                         <div
-                            class="w-12 h-12 bg-purpleAccent/10 rounded-lg flex items-center justify-center font-bold text-purpleAccent text-xl">
+                            class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 bg-purpleAccent/10 rounded-lg flex items-center justify-center font-bold text-purpleAccent text-lg sm:text-xl">
                             ⛑️</div>
-                        <div>
-                            <h4 class="font-outfit text-base font-bold text-white">Persona 2 — Emergency Dispatcher</h4>
+                        <div class="min-w-0">
+                            <h4 class="font-outfit text-sm sm:text-base font-bold text-white">Persona 2 — Emergency Dispatcher</h4>
                             <p class="text-xs text-slate-400 leading-relaxed mt-1"><strong class="text-slate-300">1122 / Edhi / Red Crescent:</strong> Needs live routes, ETAs, and geotagged citizen coordinates — not phone chains during a flood.</p>
                         </div>
                     </div>
 
                     <!-- Smart Citizens -->
-                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex gap-4 items-center">
+                    <div class="persona-card glass-panel p-3 sm:p-4 rounded-xl border border-slate-800 flex gap-3 sm:gap-4 items-start sm:items-center">
                         <div
-                            class="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center font-bold text-amber-500 text-xl">
+                            class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 bg-amber-500/10 rounded-lg flex items-center justify-center font-bold text-amber-500 text-lg sm:text-xl">
                             📱</div>
-                        <div>
-                            <h4 class="font-outfit text-base font-bold text-white">Persona 3 — Citizen in Crisis</h4>
+                        <div class="min-w-0">
+                            <h4 class="font-outfit text-sm sm:text-base font-bold text-white">Persona 3 — Citizen in Crisis</h4>
                             <p class="text-xs text-slate-400 leading-relaxed mt-1"><strong class="text-slate-300">Flood-zone resident:</strong> Reports in Urdu via Flutter app, receives detour maps &amp; safety alerts — "Saddar Underpass bilkul band hai" before they drive into water.</p>
                         </div>
                     </div>
@@ -973,8 +1582,8 @@
         </section>
 
         <!-- SLIDE 5: Why CityBrain Wins — Innovation & Differentiation -->
-        <section class="slide-scene stretch-slide overflow-y-auto lg:overflow-hidden" id="slide-5">
-            <div class="flex flex-col w-full max-w-7xl h-full gap-4 py-1 min-h-0">
+        <section class="slide-scene stretch-slide overflow-x-hidden overflow-y-auto" id="slide-5">
+            <div class="slide-inner flex flex-col w-full gap-4 sm:gap-5 py-1 min-h-0">
 
                 <div class="slide-header shrink-0">
                     <span class="slide-tagline">Slide 5 · Why We Win</span>
@@ -986,21 +1595,21 @@
                 </div>
 
                 <!-- Competitor comparison table -->
-                <div class="glass-panel rounded-xl border border-slate-800 overflow-hidden shrink-0">
-                    <div class="grid grid-cols-4 gap-0 text-[10px] sm:text-xs font-mono border-b border-slate-800 bg-panel/80">
+                <div class="glass-panel rounded-xl border border-slate-800 overflow-hidden shrink-0 competitor-table text-[10px] sm:text-xs font-mono">
+                    <div class="competitor-head grid grid-cols-4 gap-0 border-b border-slate-800 bg-panel/80">
                         <div class="p-2 sm:p-3 text-slate-500">Capability</div>
                         <div class="p-2 sm:p-3 text-red-400/80 text-center">Typical Chatbot</div>
                         <div class="p-2 sm:p-3 text-yellow-500/80 text-center">Static Dashboard</div>
                         <div class="p-2 sm:p-3 text-cyanAccent text-center font-bold">CityBrain AI</div>
                     </div>
-                    <div class="divide-y divide-slate-800/80 text-[10px] sm:text-xs">
-                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Multilingual crisis fusion</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Partial</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Roman Urdu + EN</div></div>
-                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Autonomous agent pipeline</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">✗</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ 9 agents</div></div>
-                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Dispatch &amp; reroute execution</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Manual</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Tool registry</div></div>
-                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Physics simulation twin</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Static map</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Live WS overlays</div></div>
-                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Adaptive replan loop</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">✗</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Plan v2 auto</div></div>
-                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Production deploy + mobile app</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">Sometimes</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ Live + APK</div></div>
-                        <div class="grid grid-cols-4 gap-0"><div class="p-2 sm:p-2.5 text-slate-400">Antigravity trace export</div><div class="p-2 sm:p-2.5 text-center text-red-400/60">✗</div><div class="p-2 sm:p-2.5 text-center text-yellow-500/60">✗</div><div class="p-2 sm:p-2.5 text-center text-cyanAccent font-bold">✓ CIRO schema</div></div>
+                    <div class="divide-y divide-slate-800/80 sm:divide-y-0">
+                        <div class="competitor-row"><div class="competitor-cap text-slate-400">Multilingual crisis fusion</div><div class="competitor-score text-red-400/60" data-label="Typical Chatbot">✗</div><div class="competitor-score text-yellow-500/60" data-label="Static Dashboard">Partial</div><div class="competitor-score text-cyanAccent font-bold" data-label="CityBrain AI">✓ Roman Urdu + EN</div></div>
+                        <div class="competitor-row"><div class="competitor-cap text-slate-400">Autonomous agent pipeline</div><div class="competitor-score text-red-400/60" data-label="Typical Chatbot">✗</div><div class="competitor-score text-yellow-500/60" data-label="Static Dashboard">✗</div><div class="competitor-score text-cyanAccent font-bold" data-label="CityBrain AI">✓ 9 agents</div></div>
+                        <div class="competitor-row"><div class="competitor-cap text-slate-400">Dispatch &amp; reroute execution</div><div class="competitor-score text-red-400/60" data-label="Typical Chatbot">✗</div><div class="competitor-score text-yellow-500/60" data-label="Static Dashboard">Manual</div><div class="competitor-score text-cyanAccent font-bold" data-label="CityBrain AI">✓ Tool registry</div></div>
+                        <div class="competitor-row"><div class="competitor-cap text-slate-400">Physics simulation twin</div><div class="competitor-score text-red-400/60" data-label="Typical Chatbot">✗</div><div class="competitor-score text-yellow-500/60" data-label="Static Dashboard">Static map</div><div class="competitor-score text-cyanAccent font-bold" data-label="CityBrain AI">✓ Live WS overlays</div></div>
+                        <div class="competitor-row"><div class="competitor-cap text-slate-400">Adaptive replan loop</div><div class="competitor-score text-red-400/60" data-label="Typical Chatbot">✗</div><div class="competitor-score text-yellow-500/60" data-label="Static Dashboard">✗</div><div class="competitor-score text-cyanAccent font-bold" data-label="CityBrain AI">✓ Plan v2 auto</div></div>
+                        <div class="competitor-row"><div class="competitor-cap text-slate-400">Production deploy + mobile app</div><div class="competitor-score text-red-400/60" data-label="Typical Chatbot">✗</div><div class="competitor-score text-yellow-500/60" data-label="Static Dashboard">Sometimes</div><div class="competitor-score text-cyanAccent font-bold" data-label="CityBrain AI">✓ Live + APK</div></div>
+                        <div class="competitor-row"><div class="competitor-cap text-slate-400">Antigravity trace export</div><div class="competitor-score text-red-400/60" data-label="Typical Chatbot">✗</div><div class="competitor-score text-yellow-500/60" data-label="Static Dashboard">✗</div><div class="competitor-score text-cyanAccent font-bold" data-label="CityBrain AI">✓ CIRO schema</div></div>
                     </div>
                 </div>
 
@@ -1036,8 +1645,8 @@
         </section>
 
         <!-- SLIDE 6: Future Roadmap & Next Steps -->
-        <section class="slide-scene stretch-slide" id="slide-6">
-            <div class="flex flex-col w-full max-w-7xl h-full justify-between py-2 min-h-0">
+        <section class="slide-scene stretch-slide overflow-x-hidden overflow-y-auto" id="slide-6">
+            <div class="slide-inner flex flex-col w-full min-h-0 gap-3 sm:gap-4 py-1">
 
                 <div class="slide-header shrink-0">
                     <span class="slide-tagline">Slide 6 · Future Roadmap</span>
@@ -1046,7 +1655,7 @@
                 </div>
 
                 <!-- Timeline path -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 my-4 relative flex-1 min-h-0 items-start" id="roadmap-timeline">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 relative items-start" id="roadmap-timeline">
                     <div class="roadmap-connector hidden md:block"></div>
 
                     <!-- Milestone 1 -->
@@ -1102,9 +1711,9 @@
                 </div>
 
                 <!-- Final closing sequence card -->
-                <div class="glass-panel p-4 rounded-xl border border-slate-800/80 bg-gradient-to-r from-panel via-void to-panel text-center flex flex-col items-center gap-2 relative overflow-hidden shrink-0"
+                <div class="glass-panel p-3 sm:p-4 rounded-xl border border-slate-800/80 bg-gradient-to-r from-panel via-void to-panel text-center flex flex-col items-center gap-2 sm:gap-2.5 relative overflow-hidden shrink-0 mt-1"
                     id="final-close-box">
-                    <h3 class="font-outfit text-lg sm:text-xl md:text-2xl font-black text-white tracking-wide">"The city posts chaos. CityBrain posts coordinates."</h3>
+                    <h3 class="font-outfit text-base sm:text-xl md:text-2xl font-black text-white tracking-wide leading-snug px-1">"The city posts chaos. CityBrain posts coordinates."</h3>
                     <p class="text-xs font-mono text-cyanAccent tracking-widest uppercase">Ready for Q&amp;A · GitHub · README · Antigravity Traces · Live Demo</p>
                     <p class="text-[10px] font-mono text-slate-500">Ask us anything — we built every layer and can show it live.</p>
                     <button onclick="triggerClosingSequence()"
@@ -1116,48 +1725,52 @@
 
     </main>
 
-    <!-- Slide Navigation Footer controls -->
-    <footer class="presentation-footer absolute bottom-0 left-0 w-full px-3 sm:px-6 md:px-8 lg:px-12 py-3 flex justify-between items-center gap-2 z-50">
-        <div class="keyboard-tip text-slate-500 font-mono text-xs hidden lg:flex items-center gap-1.5 shrink-0">
-            <span>Present:</span>
-            <span class="keyboard-key">←</span>
-            <span class="keyboard-key">→</span>
-            <span>or</span>
-            <span class="keyboard-key">Space</span>
-        </div>
+    <footer class="presentation-footer w-full" role="contentinfo">
+        <div class="footer-inner">
+            <div class="footer-bar">
+                <div class="keyboard-tip text-slate-500 font-mono text-xs hidden lg:flex items-center gap-1.5 shrink-0 order-1">
+                    <span>Present:</span>
+                    <span class="keyboard-key">←</span>
+                    <span class="keyboard-key">→</span>
+                    <span>or</span>
+                    <span class="keyboard-key">Space</span>
+                </div>
 
-        <!-- Dot indicators -->
-        <div class="flex gap-2.5" id="slide-indicators">
-            <div class="w-2 h-2 rounded-full bg-cyanAccent shadow-[0_0_8px_#00FFC6] cursor-none transition-all duration-300"
-                onclick="jumpToSlide(1)" id="indicator-1"></div>
-            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
-                onclick="jumpToSlide(2)" id="indicator-2"></div>
-            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
-                onclick="jumpToSlide(3)" id="indicator-3"></div>
-            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
-                onclick="jumpToSlide(4)" id="indicator-4"></div>
-            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
-                onclick="jumpToSlide(5)" id="indicator-5"></div>
-            <div class="w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300"
-                onclick="jumpToSlide(6)" id="indicator-6"></div>
-        </div>
+                <div id="slide-indicators" class="order-first sm:order-none" role="tablist" aria-label="Slides">
+                    <div class="slide-indicator w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full bg-cyanAccent shadow-[0_0_8px_#00FFC6] cursor-pointer transition-all duration-300"
+                        onclick="jumpToSlide(1)" id="indicator-1" role="tab" tabindex="0" aria-label="Slide 1" aria-selected="true"></div>
+                    <div class="slide-indicator w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 cursor-pointer transition-all duration-300"
+                        onclick="jumpToSlide(2)" id="indicator-2" role="tab" tabindex="0" aria-label="Slide 2" aria-selected="false"></div>
+                    <div class="slide-indicator w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 cursor-pointer transition-all duration-300"
+                        onclick="jumpToSlide(3)" id="indicator-3" role="tab" tabindex="0" aria-label="Slide 3" aria-selected="false"></div>
+                    <div class="slide-indicator w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 cursor-pointer transition-all duration-300"
+                        onclick="jumpToSlide(4)" id="indicator-4" role="tab" tabindex="0" aria-label="Slide 4" aria-selected="false"></div>
+                    <div class="slide-indicator w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 cursor-pointer transition-all duration-300"
+                        onclick="jumpToSlide(5)" id="indicator-5" role="tab" tabindex="0" aria-label="Slide 5" aria-selected="false"></div>
+                    <div class="slide-indicator w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 cursor-pointer transition-all duration-300"
+                        onclick="jumpToSlide(6)" id="indicator-6" role="tab" tabindex="0" aria-label="Slide 6" aria-selected="false"></div>
+                </div>
 
-        <div class="flex gap-2 sm:gap-3 shrink-0">
-            <button onclick="navigateSlide(-1)"
-                class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-slate-400 hover:text-cyanAccent">PREV</button>
-            <button onclick="navigateSlide(1)"
-                class="glass-panel text-[10px] sm:text-xs font-mono px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-cyanAccent hover:bg-cyanAccent/5 hover:text-white font-semibold">NEXT</button>
+                <div class="footer-nav-buttons order-last">
+                    <button type="button" onclick="navigateSlide(-1)"
+                        class="glass-panel text-[10px] sm:text-xs font-mono px-3 sm:px-4 py-2 rounded-lg text-slate-400 hover:text-cyanAccent min-w-[4.5rem]">PREV</button>
+                    <button type="button" onclick="navigateSlide(1)"
+                        class="glass-panel text-[10px] sm:text-xs font-mono px-3 sm:px-4 py-2 rounded-lg text-cyanAccent hover:bg-cyanAccent/5 hover:text-white font-semibold min-w-[4.5rem]">NEXT</button>
+                </div>
+            </div>
         </div>
     </footer>
+
+    </div><!-- /#presentation-shell -->
 
     <!-- Fullscreen Finale Overlay -->
     <div id="finale-overlay"
         class="fixed inset-0 bg-void z-[9999] opacity-0 pointer-events-none flex flex-col items-center justify-center transition-opacity duration-1000">
-        <div class="text-center flex flex-col items-center gap-6 p-8">
+        <div class="text-center flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-8 max-w-[95vw]">
             <div
-                class="w-20 h-20 rounded-full border-4 border-cyanAccent flex items-center justify-center font-outfit text-5xl font-black text-cyanAccent animate-pulse shadow-[0_0_30px_#00FFC6]">
+                class="w-14 h-14 sm:w-20 sm:h-20 rounded-full border-4 border-cyanAccent flex items-center justify-center font-outfit text-3xl sm:text-5xl font-black text-cyanAccent animate-pulse shadow-[0_0_30px_#00FFC6]">
                 C</div>
-            <h1 class="font-outfit text-5xl md:text-7xl font-black tracking-tight text-white leading-none">
+            <h1 class="font-outfit text-3xl sm:text-5xl md:text-7xl font-black tracking-tight text-white leading-none">
                 CITYBRAIN <span class="text-cyanAccent animate-pulse">AI</span>
             </h1>
             <p
@@ -1584,16 +2197,22 @@
             const targetSlide = document.getElementById(`slide-${index}`);
             targetSlide.classList.add('active');
 
-            // Counter update
-            document.getElementById('slide-num').innerText = `0${index} / 0${totalSlides}`;
+            // Counter update (desktop + mobile navbar)
+            const slideLabel = `0${index} / 0${totalSlides}`;
+            const slideNumEl = document.getElementById('slide-num');
+            const slideNumMobile = document.getElementById('slide-num-mobile');
+            if (slideNumEl) slideNumEl.innerText = slideLabel;
+            if (slideNumMobile) slideNumMobile.innerText = slideLabel;
 
             // Indicator dots update
             for (let i = 1; i <= totalSlides; i++) {
                 const indicator = document.getElementById(`indicator-${i}`);
-                if (i === index) {
-                    indicator.className = "w-6 h-2 rounded-full bg-cyanAccent shadow-[0_0_8px_#00FFC6] cursor-none transition-all duration-300";
+                const isActive = i === index;
+                indicator.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                if (isActive) {
+                    indicator.className = "slide-indicator w-7 h-2.5 sm:w-6 sm:h-2 rounded-full bg-cyanAccent shadow-[0_0_8px_#00FFC6] cursor-pointer transition-all duration-300";
                 } else {
-                    indicator.className = "w-2 h-2 rounded-full bg-slate-700 cursor-none transition-all duration-300";
+                    indicator.className = "slide-indicator w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full bg-slate-700 cursor-pointer transition-all duration-300";
                 }
             }
 
@@ -1700,10 +2319,11 @@
         let sliderPercent = 50;
 
         function updateComparisonSlider(percent) {
-            sliderPercent = Math.max(8, Math.min(92, percent));
+            sliderPercent = Math.max(12, Math.min(88, percent));
             sliderHandle.style.left = `${sliderPercent}%`;
             chaosHalf.style.clipPath = `inset(0 ${100 - sliderPercent}% 0 0)`;
             solutionHalf.style.clipPath = `inset(0 0 0 ${sliderPercent}%)`;
+            comparisonContainer.style.setProperty('--split-pct', `${sliderPercent}%`);
         }
 
         updateComparisonSlider(50);
@@ -1949,14 +2569,42 @@
             mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        window.addEventListener('resize', () => {
+        function handleViewportResize() {
+            const w = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+            const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
             if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.aspect = w / h;
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setSize(w, h);
             }
             initRainCanvas();
-        });
+        }
+
+        window.addEventListener('resize', handleViewportResize);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleViewportResize);
+            window.visualViewport.addEventListener('scroll', handleViewportResize);
+        }
+
+        /* Swipe between slides on touch devices */
+        let touchStartX = 0;
+        let touchStartY = 0;
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            const finale = document.getElementById('finale-overlay');
+            if (finale?.classList.contains('opacity-100')) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+            const target = e.target;
+            if (target.closest('#comparison-container, .slider-handle, select, input, textarea, button, a')) return;
+            navigateSlide(dx < 0 ? 1 : -1);
+        }, { passive: true });
 
         // Initialize Background wave shader scenes
         window.addEventListener('load', () => {
